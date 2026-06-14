@@ -1,0 +1,286 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+}
+
+/* ================= HEADER ================= */
+
+header {
+
+    background: #b41414;
+
+    color: white;
+
+    padding: 20px;
+
+    text-align: center;
+
+    border-bottom: 5px solid #00bcd4;
+}
+
+/* LOGO */
+
+.logo {
+
+    width: 60px;
+
+    height: 60px;
+
+    border-radius: 50%;
+
+    border: 2px solid white;
+
+    object-fit: cover;
+}
+
+/* ================= NAVBAR ================= */
+
+nav {
+
+    background: #00bcd4;
+
+    padding: 15px 30px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+/* ================= LEFT NAV ================= */
+
+.nav-left {
+
+    display: flex;
+
+    align-items: center;
+}
+
+.nav-left a {
+
+    color: white;
+
+    text-decoration: none;
+
+    margin-right: 25px;
+
+    font-weight: bold;
+
+    font-size: 18px;
+
+    transition: 0.3s;
+}
+
+.nav-left a:hover {
+
+    color: #222;
+}
+
+/* ================= PROFILE DROPDOWN ================= */
+
+.profile-dropdown {
+
+    position: relative;
+}
+
+/* SMALL PROFILE IMAGE */
+
+.profile-icon {
+
+    width: 50px;
+
+    height: 50px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid white;
+
+    cursor: pointer;
+
+    background: white;
+
+    transition: 0.3s;
+}
+
+/* PROFILE IMAGE HOVER */
+
+.profile-icon:hover {
+
+    transform: scale(1.08);
+}
+
+/* ================= DROPDOWN MENU ================= */
+
+.dropdown-menu {
+
+    position: absolute;
+
+    top: 70px;
+
+    right: 0;
+
+    width: 320px;
+
+    background: #1f1f1f;
+
+    color: white;
+
+    border-radius: 20px;
+
+    padding: 20px;
+
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+
+    z-index: 1000;
+
+    /* ANIMATION */
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transform: translateY(10px);
+
+    transition: 0.3s ease;
+}
+
+/* SHOW MENU */
+
+.dropdown-menu.show {
+
+    opacity: 1;
+
+    visibility: visible;
+
+    transform: translateY(0);
+}
+
+/* ================= USER INFO ================= */
+
+.user-info {
+
+    text-align: center;
+
+    margin-bottom: 20px;
+}
+
+/* BIG PROFILE IMAGE */
+
+.big-profile {
+
+    width: 90px;
+
+    height: 90px;
+
+    border-radius: 50%;
+
+    border: 3px solid #00bcd4;
+
+    object-fit: cover;
+
+    margin-bottom: 10px;
+
+    background: white;
+}
+
+/* USER NAME */
+
+.user-info h2 {
+
+    margin-top: 10px;
+
+    font-size: 24px;
+}
+
+/* USER TEXT */
+
+.user-info p {
+
+    color: #ccc;
+
+    font-size: 15px;
+}
+
+/* ================= MENU LINKS ================= */
+
+.menu-links {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+/* MENU BUTTONS */
+
+.menu-links a {
+
+    text-decoration: none;
+
+    color: white;
+
+    background: #2b2b2b;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    transition: 0.3s;
+
+    font-size: 16px;
+}
+
+/* HOVER EFFECT */
+
+.menu-links a:hover {
+
+    background: #3d3d3d;
+
+    transform: translateX(5px);
+}
+
+/* ================= WELCOME TEXT ================= */
+
+.welcome {
+
+    text-align: center;
+
+    margin-top: 40px;
+
+    font-size: 35px;
+
+    color: #222;
+}
+
+/* ================= RESPONSIVE DESIGN ================= */
+
+@media (max-width: 600px) {
+
+    nav {
+
+        padding: 15px;
+    }
+
+    .nav-left a {
+
+        margin-right: 15px;
+
+        font-size: 15px;
+    }
+
+    .dropdown-menu {
+
+        width: 280px;
+    }
+
+    .welcome {
+
+        font-size: 28px;
+    }
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Home</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='Home.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+
+        <img
+            src="{{ url_for('static', filename='imagebloggerlog.png') }}"
+            class="logo"
+        >
+
+        <h1>My Flask Website</h1>
+
+    </header>
+
+    <!-- ================= NAVBAR ================= -->
+
+    <nav>
+
+        <!-- LEFT NAV LINKS -->
+
+        <div class="nav-left">
+
+            <a href="{{ url_for('Home') }}">
+                Home
+            </a>
+
+            <a href="#">
+                About
+            </a>
+
+            <a href="#">
+                Contact
+            </a>
+            {% if user and user.role == "admin" %}
+    <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+              {% endif %}
+
+        </div>
+
+        <!-- RIGHT PROFILE SECTION -->
+
+        <div class="profile-dropdown">
+
+            <!-- PROFILE IMAGE -->
+
+            {% if user %}
+
+                <img
+                    src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
+                    class="profile-icon"
+                    id="profileToggle"
+                >
+
+            {% else %}
+
+                <img
+                    src="{{ url_for('static', filename='default.png') }}"
+                    class="profile-icon"
+                    id="profileToggle"
+                >
+
+            {% endif %}
+
+            <!-- DROPDOWN MENU -->
+
+            <div class="dropdown-menu" id="dropdownMenu">
+
+                <!-- USER INFO -->
+
+                <div class="user-info">
+
+                    {% if user %}
+
+                        <!-- BIG PROFILE IMAGE -->
+
+                        <img
+                            src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
+                            class="big-profile"
+                        >
+
+                        <!-- USERNAME -->
+
+                        <h2>
+                            Hi, {{ user.username }}!
+                        </h2>
+
+                        <p>
+                            Welcome back 👋
+                        </p>
+
+                    {% else %}
+
+                        <img
+                            src="{{ url_for('static', filename='default.png') }}"
+                            class="big-profile"
+                        >
+
+                        <h2>
+                            Welcome Guest
+                        </h2>
+
+                    {% endif %}
+
+                </div>
+
+                <!-- MENU LINKS -->
+
+                <div class="menu-links">
+
+                    {% if user %}
+
+                        <a href="{{ url_for('profile') }}">
+                            Profile
+                        </a>
+
+                        <a href="#">
+                            Dashboard
+                        </a>
+
+                        <a href="#">
+                            Settings
+                        </a>
+
+                        <a href="#">
+                            Help
+                        </a>
+
+                        <a href="{{ url_for('Logout') }}">
+                            Logout
+                        </a>
+
+                    {% else %}
+
+                        <a href="{{ url_for('Login') }}">
+                            Login
+                        </a>
+
+                        <a href="{{ url_for('Register') }}">
+                            Register
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+    <!-- ================= PAGE CONTENT ================= -->
+
+    <h2 class="welcome">
+
+        Welcome Home 🎉
+
+    </h2>
+
+    <!-- ================= JAVASCRIPT ================= -->
+
+    <script>
+
+        const profileToggle =
+            document.getElementById(
+                "profileToggle"
+            );
+
+        const dropdownMenu =
+            document.getElementById(
+                "dropdownMenu"
+            );
+
+        // TOGGLE DROPDOWN
+
+        profileToggle.addEventListener(
+            "click",
+            () => {
+
+                dropdownMenu.classList.toggle(
+                    "show"
+                );
+
+            }
+        );
+
+        // CLOSE WHEN CLICK OUTSIDE
+
+        window.addEventListener(
+            "click",
+            function(e){
+
+                if(
+
+                    !profileToggle.contains(
+                        e.target
+                    )
+
+                    &&
+
+                    !dropdownMenu.contains(
+                        e.target
+                    )
+
+                ){
+
+                    dropdownMenu.classList.remove(
+                        "show"
+                    );
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>

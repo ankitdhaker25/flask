@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify OTP</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='otp.css') }}">
+</head>
+
+<body>
+
+<div class="otp-container">
+
+    <h2>🔐 Verify OTP</h2>
+
+    <p class="subtext">
+        We sent a 6-digit code to your email
+    </p>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p class="message">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('verify_otp') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="email" value="{{ email }}">
+
+        <input type="text"
+               name="otp"
+               maxlength="6"
+               placeholder="Enter OTP"
+               required>
+
+        <button type="submit">Verify OTP</button>
+
+    </form>
+
+    <p class="resend">
+        Didn’t receive code?
+        <a href="{{ url_for('Login') }}">Go back</a>
+    </p>
+
+</div>
+
+</body>
+</html>

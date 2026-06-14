@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+</head>
+
+<body>
+
+<div class="profile-container">
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p class="message">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- PROFILE IMAGE -->
+    <div class="image-wrapper">
+
+        <img
+            src="{% if user.profile_image == 'default.png' %}{{ url_for('static', filename='imagebloggerlog.png') }}{% else %}{{ url_for('static', filename='profile_pics/' + user.profile_image) }}{% endif %}"
+            class="profile-image"
+            id="profilePreview"
+            onerror="this.src='{{ url_for('static', filename='imagebloggerlog.png') }}'"
+        >
+
+        <button type="button" id="removeImageBtn">Remove Image</button>
+
+    </div>
+
+    <!-- VIEW MODE -->
+    <div id="viewMode">
+        <h1 id="usernameText">{{ user.username }}</h1>
+        <p>{{ user.email }}</p>
+
+        <p id="phoneText">
+            {{ user.phone if user.phone else "No phone added" }}
+        </p>
+    </div>
+
+    <!-- EDIT FORM -->
+    <form
+        id="editForm"
+        action="{{ url_for('update_user') }}"
+        method="POST"
+        enctype="multipart/form-data"
+        style="display:none; flex-direction: column; gap:10px;"
+    >
+
+        <!-- CSRF -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- REMOVE FLAG (IMPORTANT) -->
+        <input type="hidden" name="remove_image" id="removeFlag">
+
+        <input
+            type="text"
+            name="username"
+            id="usernameInput"
+            placeholder="Update username"
+        >
+
+        <input
+            type="text"
+            name="phone"
+            id="phoneInput"
+            placeholder="Add phone number"
+        >
+
+        <input
+            type="file"
+            name="profile_image"
+            id="imageInput"
+            accept="image/*"
+        >
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <!-- UPDATE BUTTON -->
+    <button type="button" id="editBtn">Update</button>
+
+</div>
+
+<!-- ================= JS ================= -->
+
+<script>
+
+const editBtn = document.getElementById("editBtn");
+const editForm = document.getElementById("editForm");
+const viewMode = document.getElementById("viewMode");
+
+const usernameText = document.getElementById("usernameText");
+const phoneText = document.getElementById("phoneText");
+
+const usernameInput = document.getElementById("usernameInput");
+const phoneInput = document.getElementById("phoneInput");
+
+function openEditMode() {
+    editForm.style.display = "flex";
+    viewMode.style.display = "none";
+    editBtn.style.display = "none";
+
+    usernameInput.value = usernameText.innerText;
+
+    phoneInput.value =
+        phoneText.innerText.includes("No phone") ? "" : phoneText.innerText;
+}
+
+/* OPEN EDIT MODE */
+editBtn.addEventListener("click", openEditMode);
+
+</script>
+
+<script>
+
+const profilePreview = document.getElementById("profilePreview");
+const imageInput = document.getElementById("imageInput");
+const removeBtn = document.getElementById("removeImageBtn");
+const removeFlag = document.getElementById("removeFlag");
+
+/* CLICK IMAGE TO UPLOAD */
+profilePreview.addEventListener("click", () => {
+    openEditMode();
+    imageInput.click();
+});
+
+/* PREVIEW IMAGE */
+imageInput.addEventListener("change", function () {
+    const file = this.files[0];
+
+    if (file) {
+        profilePreview.src = URL.createObjectURL(file);
+        removeFlag.value = "";
+    }
+});
+
+/* REMOVE IMAGE */
+removeBtn.addEventListener("click", () => {
+
+    openEditMode();
+    imageInput.value = "";
+    profilePreview.src = "{{ url_for('static', filename='imagebloggerlog.png') }}";
+    removeFlag.value = "1";
+});
+
+</script>
+
+</body>
+</html>

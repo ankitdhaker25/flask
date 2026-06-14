@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Register</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='Register.css') }}"
+    >
+
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>
+            Create Account
+        </h1>
+
+        <!-- FLASH MESSAGES -->
+
+        {% with messages = get_flashed_messages() %}
+
+            {% if messages %}
+
+                {% for message in messages %}
+
+                    <div class="flash-message">
+
+                        {{ message }}
+
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+        <!-- REGISTER FORM -->
+
+        <form method="POST">
+
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- USERNAME -->
+
+            <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                required
+            >
+
+            <!-- EMAIL -->
+
+            <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                required
+            >
+
+            <!-- PASSWORD -->
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+            >
+
+            <input
+                type="password"
+                name="confirm_password"
+                placeholder="Confirm Password"
+                required
+            >
+
+            <!-- REGISTER BUTTON -->
+
+            <button type="submit">
+
+                Register
+
+            </button>
+
+        </form>
+
+        <!-- LOGIN LINK -->
+
+        <p>
+
+            Already have an account?
+
+            <a href="{{ url_for('Login') }}">
+
+                Login
+
+            </a>
+
+        </p>
+
+    </div>
+
+</body>
+
+</html>

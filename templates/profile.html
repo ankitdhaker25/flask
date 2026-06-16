@@ -86,6 +86,18 @@
     <!-- UPDATE BUTTON -->
     <button type="button" id="editBtn">Update</button>
 
+    {% if user.role == 'user' %}
+    <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+        <p style="color: #666; margin-bottom: 10px;">Want to sell products?</p>
+        <form action="{{ url_for('upgrade_to_shopowner') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                Become a Shopowner
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
 </div>
 
 <!-- ================= JS ================= -->

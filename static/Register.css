@@ -79,7 +79,7 @@ form {
 
 /* ================= INPUTS ================= */
 
-input {
+input, select {
 
     width: 100%;
 
@@ -93,18 +93,40 @@ input {
 
     font-size: 15px;
 
+    color: #333;
+
     box-sizing: border-box;
 
     transition: 0.3s;
 }
 
-/* INPUT FOCUS */
+/* INPUT/SELECT FOCUS */
 
-input:focus {
+input:focus, select:focus {
 
     border-color: #00bcd4;
 
     box-shadow: 0 0 8px rgba(0, 188, 212, 0.3);
+}
+
+select {
+    background: white;
+    cursor: pointer;
+    appearance: auto; /* Ensure native dropdown arrow shows */
+}
+
+/* ================= ROLE SECTION ================= */
+
+.role-section {
+    text-align: left;
+}
+
+.role-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
+    font-weight: bold;
 }
 
 /* ================= BUTTON ================= */

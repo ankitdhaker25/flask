@@ -51,6 +51,9 @@
             {% if user and user.role == "admin" %}
     <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
               {% endif %}
+            {% if user and user.role == "shopowner" %}
+    <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+              {% endif %}
 
         </div>
 
@@ -130,7 +133,7 @@
                             Profile
                         </a>
 
-                        <a href="#">
+                        <a href="{{ url_for('user_dashboard') }}">
                             Dashboard
                         </a>
 
@@ -224,6 +227,17 @@
                     dropdownMenu.classList.remove(
                         "show"
                     );
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>     );
 
                 }
 

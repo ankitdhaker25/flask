@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>{{ customer.customer_name }} - Account</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='Home.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='customer_account.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <!-- ================= SIDEBAR ================= -->
+    <div class="sidebar-trigger"></div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customers</h2>
+        </div>
+        <div class="search-container">
+            <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="filterCustomers()">
+        </div>
+        <div class="customer-list" id="customerList">
+            {% for c in customers %}
+                <a href="{{ url_for('customer_account', id=c.id) }}" class="customer-item {{ 'active' if c.id == customer.id else '' }}">
+                    {{ c.customer_name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+
+        <img
+            src="{{ url_for('static', filename='imagebloggerlog.png') }}"
+            class="logo"
+        >
+
+        <h1>Customer Account</h1>
+
+    </header>
+
+    <!-- ================= NAVBAR ================= -->
+
+    <nav>
+
+        <div class="nav-left">
+            <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            <a href="{{ url_for('user_dashboard') }}">My Dashboard</a>
+        </div>
+
+        <div class="profile-dropdown">
+            {% if user %}
+                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="profile-icon" id="profileToggle">
+            {% else %}
+                <img src="{{ url_for('static', filename='default.png') }}" class="profile-icon" id="profileToggle">
+            {% endif %}
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="user-info">
+                    {% if user %}
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>{{ user.username }}</h2>
+                    {% endif %}
+                </div>
+                <div class="menu-links">
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('Logout') }}">Logout</a>
+                </div>
+            </div>
+        </div>
+
+    </nav>
+
+    <!-- ================= PAGE CONTENT ================= -->
+
+    <div class="dashboard-content">
+        
+        <div class="customer-header">
+            <div class="customer-info">
+                <h1>{{ customer.customer_name }}</h1>
+                <p>{{ customer.email if customer.email else "No email provided" }}</p>
+                <span style="font-size: 0.8rem; color: #999;">Customer since {{ customer.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            <div class="total-summary">
+                <span>Total Spent</span>
+                <h2>${{ "%.2f"|format(total_spent) }}</h2>
+            </div>
+        </div>
+
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="background: #e3f2fd; color: #1976d2; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="add-purchase-form">
+            <h3 style="color: #333; margin-bottom: 15px;">Record New Purchase</h3>
+            <form action="{{ url_for('add_purchase', customer_id=customer.id) }}" method="POST" style="display: flex; gap: 15px; align-items: flex-end;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group" style="flex: 2;">
+                    <label>Select Product</label>
+                    <select name="product_id" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                        <option value="">-- Choose from Inventory --</option>
+                        {% for item in inventory %}
+                            <option value="{{ item.id }}" {% if item.item_count <= 0 %}disabled{% endif %}>
+                                {{ item.item_name }} (${{ "%.2f"|format(item.item_price) }}) - {{ item.item_count }} in stock
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" value="1" min="1" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                </div>
+
+                <button type="submit" class="btn" style="margin-bottom: 0;">Add Item</button>
+            </form>
+        </div>
+
+        <div class="purchase-table-container">
+            <h3 style="color: #333; margin-bottom: 15px;">Purchase History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                        <tr>
+                            <td>{{ p.Inventory.item_name }}</td>
+                            <td>${{ "%.2f"|format(p.CustomerPurchase.price) }}</td>
+                            <td>{{ p.CustomerPurchase.quantity }}</td>
+                            <td>{{ p.CustomerPurchase.purchase_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td style="font-weight: bold; color: #00bcd4;">
+                                ${{ "%.2f"|format(p.CustomerPurchase.price * p.CustomerPurchase.quantity) }}
+                            </td>
+                            <td>
+                                <form action="{{ url_for('delete_purchase', id=p.CustomerPurchase.id) }}" method="POST" onsubmit="return confirm('Delete this record?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="delete-btn">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not purchases %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 30px; color: #999;">No purchases recorded yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+
+    <script>
+        function filterCustomers() {
+            const input = document.getElementById('customerSearch');
+            const filter = input.value.toLowerCase();
+            const list = document.getElementById('customerList');
+            const items = list.getElementsByClassName('customer-item');
+
+            for (let i = 0; i < items.length; i++) {
+                const name = items[i].textContent || items[i].innerText;
+                if (name.toLowerCase().indexOf(filter) > -1) {
+                    items[i].style.display = "";
+                } else {
+                    items[i].style.display = "none";
+                }
+            }
+        }
+    </script>
+
+    <script>
+        const profileToggle = document.getElementById("profileToggle");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+
+        profileToggle.addEventListener("click", () => {
+            dropdownMenu.classList.toggle("show");
+        });
+
+        window.addEventListener("click", function(e){
+            if(!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)){
+                dropdownMenu.classList.remove("show");
+            }
+        });
+    </script>
+
+</body>
+
+</html>

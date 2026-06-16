@@ -121,6 +121,32 @@ class PasswordResetOTP(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
+class Inventory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    item_name = db.Column(db.String(100), nullable=False)
+    item_price = db.Column(db.Float, nullable=False)
+    item_count = db.Column(db.Integer, nullable=False)
+    created_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Customer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class CustomerPurchase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    purchase_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 with app.app_context():
     db.create_all()
 
@@ -217,6 +243,21 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+# ================= SHOPOWNER =================
+def shopowner_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for("Login"))
+
+        user = db.session.get(User, session['user'])
+
+        if not user or (user.role != "shopowner" and user.role != "admin"):
+            abort(403)
+
+        return f(*args, **kwargs)
+    return wrapper
+
 # ================= HOME =================
 @app.route("/")
 def Home():
@@ -234,6 +275,10 @@ def Register():
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
+        role = request.form.get("role") or "user"
+
+        if role not in ["user", "shopowner"]:
+            role = "user"
 
         if not username or not valid_email(email) or not strong_password(password):
             flash("Use a valid username, email, and password with 8+ characters, uppercase, lowercase, and a number")
@@ -250,13 +295,14 @@ def Register():
         user = User(
             username=username,
             email=email,
-            password=generate_password_hash(password)
+            password=generate_password_hash(password),
+            role=role
         )
 
         db.session.add(user)
         db.session.commit()
 
-        flash("Registered 🎉")
+        flash(f"Registered as {role} 🎉")
         return redirect(url_for("Login"))
 
     return render_template("Register.html")
@@ -367,6 +413,181 @@ def delete_user(id):
         flash("Cannot delete admin ❌")
 
     return redirect(url_for("admin_dashboard"))
+
+# ================= SHOPOWNER PANEL =================
+@app.route("/shopowner")
+@shopowner_required
+def shopowner_dashboard():
+    user = db.session.get(User, session['user'])
+    
+    customers = db.session.execute(
+        db.select(Customer).filter_by(shop_id=user.id).order_by(Customer.customer_name)
+    ).scalars().all()
+    
+    inventory = db.session.execute(
+        db.select(Inventory).filter_by(shop_id=user.id)
+    ).scalars().all()
+
+    return render_template("shopowner_dashboard.html", 
+                           user=user, 
+                           customers=customers,
+                           inventory=inventory)
+
+
+@app.route("/shopowner/customer/add", methods=["POST"])
+@shopowner_required
+def add_customer():
+    user_id = session['user']
+    name = (request.form.get("customer_name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+
+    if not name:
+        flash("Customer name is required")
+        return redirect(url_for("shopowner_dashboard"))
+
+    customer = Customer(
+        shop_id=user_id,
+        customer_name=name,
+        email=email
+    )
+    db.session.add(customer)
+    db.session.commit()
+    
+    flash(f"Customer {name} added! 🎉")
+    return redirect(url_for("shopowner_dashboard"))
+
+
+@app.route("/shopowner/customer/<int:id>")
+@shopowner_required
+def customer_account(id):
+    user = db.session.get(User, session['user'])
+    customer = db.session.get(Customer, id)
+
+    if not customer or customer.shop_id != user.id:
+        abort(403)
+
+    # Sidebar needs customers too
+    customers = db.session.execute(
+        db.select(Customer).filter_by(shop_id=user.id).order_by(Customer.customer_name)
+    ).scalars().all()
+    
+    inventory = db.session.execute(
+        db.select(Inventory).filter_by(shop_id=user.id)
+    ).scalars().all()
+
+    # Get purchases
+    purchases = db.session.execute(
+        db.select(CustomerPurchase, Inventory)
+        .join(Inventory, CustomerPurchase.product_id == Inventory.id)
+        .filter(CustomerPurchase.customer_id == id)
+        .order_by(CustomerPurchase.purchase_date.desc())
+    ).all()
+
+    total_spent = sum(p.CustomerPurchase.price * p.CustomerPurchase.quantity for p in purchases)
+
+    return render_template("customer_account.html", 
+                           user=user, 
+                           customer=customer, 
+                           customers=customers,
+                           inventory=inventory,
+                           purchases=purchases,
+                           total_spent=total_spent)
+
+
+@app.route("/shopowner/customer/<int:customer_id>/purchase/add", methods=["POST"])
+@shopowner_required
+def add_purchase(customer_id):
+    user_id = session['user']
+    customer = db.session.get(Customer, customer_id)
+    
+    if not customer or customer.shop_id != user_id:
+        abort(403)
+
+    product_id = request.form.get("product_id")
+    quantity = int(request.form.get("quantity") or 1)
+    
+    product = db.session.get(Inventory, product_id)
+    if not product or product.shop_id != user_id:
+        flash("Invalid product selection")
+        return redirect(url_for("customer_account", id=customer_id))
+
+    # Business Logic: Check stock availability
+    if product.item_count < quantity:
+        flash(f"Insufficient stock! Only {product.item_count} available.")
+        return redirect(url_for("customer_account", id=customer_id))
+
+    # Business Logic: Reduce inventory stock
+    product.item_count -= quantity
+
+    purchase = CustomerPurchase(
+        customer_id=customer_id,
+        product_id=product.id,
+        quantity=quantity,
+        price=product.item_price # Record price at time of purchase
+    )
+    
+    db.session.add(purchase)
+    db.session.commit()
+    
+    flash("Purchase added! 🛍️")
+    return redirect(url_for("customer_account", id=customer_id))
+
+
+@app.route("/shopowner/purchase/delete/<int:id>", methods=["POST"])
+@shopowner_required
+def delete_purchase(id):
+    user_id = session['user']
+    purchase = db.session.get(CustomerPurchase, id)
+    
+    if not purchase:
+        abort(404)
+        
+    customer = db.session.get(Customer, purchase.customer_id)
+    if not customer or customer.shop_id != user_id:
+        abort(403)
+
+    db.session.delete(purchase)
+    db.session.commit()
+    
+    flash("Purchase deleted 🗑️")
+    return redirect(url_for("customer_account", id=customer.id))
+
+
+@app.route("/shopowner/inventory/add", methods=["POST"])
+@shopowner_required
+def add_inventory_item():
+    user_id = session['user']
+    name = request.form.get("item_name")
+    price = float(request.form.get("item_price") or 0)
+    count = int(request.form.get("item_count") or 0)
+
+    item = Inventory(
+        shop_id=user_id,
+        item_name=name,
+        item_price=price,
+        item_count=count
+    )
+    db.session.add(item)
+    db.session.commit()
+    
+    flash("Item added to inventory!")
+    return redirect(request.referrer or url_for("shopowner_dashboard"))
+
+
+@app.route("/shopowner/inventory/delete/<int:id>", methods=["POST"])
+@shopowner_required
+def delete_inventory_item(id):
+    user_id = session['user']
+    item = db.session.get(Inventory, id)
+    
+    if not item or item.shop_id != user_id:
+        abort(404)
+
+    db.session.delete(item)
+    db.session.commit()
+    
+    flash(f"Item '{item.item_name}' removed from inventory.")
+    return redirect(url_for("shopowner_dashboard"))
 
 # ================= FORGOT PASSWORD (FIXED ERROR HERE) =================
 @app.route("/forgot_password")
@@ -503,6 +724,33 @@ def reset_password():
         return redirect(url_for("Login"))
 
     return render_template("reset_password.html")
+
+# ================= USER DASHBOARD =================
+@app.route("/dashboard")
+def user_dashboard():
+    if 'user' not in session:
+        return redirect(url_for("Login"))
+
+    user = db.session.get(User, session['user'])
+    
+    # If they are a shopowner or admin, they might prefer their specific dashboards,
+    # but we'll provide this general one for activity/history.
+    
+    return render_template("user_dashboard.html", user=user)
+
+# ================= UPGRADE TO SHOPOWNER =================
+@app.route("/upgrade_to_shopowner", methods=["POST"])
+def upgrade_to_shopowner():
+    if 'user' not in session:
+        return redirect(url_for("Login"))
+
+    user = db.session.get(User, session['user'])
+    if user and user.role == "user":
+        user.role = "shopowner"
+        db.session.commit()
+        flash("You are now a Shopowner! 🏪")
+    
+    return redirect(url_for("profile"))
 
 # ================= RUN =================
 if __name__ == "__main__":

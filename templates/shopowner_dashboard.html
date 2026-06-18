@@ -1,279 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <title>Shopowner Dashboard</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='Home.css') }}"
-    >
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='shopowner_dashboard.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='shopowner_dashboard.css') }}">
 </head>
-
 <body>
 
+    <!-- ================= SIDEBAR ================= -->
+    <div class="sidebar-trigger"></div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customers</h2>
+        </div>
+        <div class="sidebar-search">
+            <input type="text" id="customerSearch" placeholder="🔍 Search customers..." onkeyup="filterCustomers()">
+        </div>
+        <div class="customer-list" id="customerList">
+            {% for c in customers %}
+                <a href="{{ url_for('customer_account', id=c.id) }}" class="customer-item">
+                    {{ c.customer_name }}
+                </a>
+            {% endfor %}
+            {% if not customers %}
+                <div class="empty-state">
+                    <p>No Customers Yet</p>
+                </div>
+            {% endif %}
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn btn-outline" style="width: 100%; color: white; border-color: #334155;" onclick="openModal('addCustomerModal')">
+                + Add Customer
+            </button>
+        </div>
+    </div>
+
     <!-- ================= HEADER ================= -->
-
     <header>
-
-        <img
-            src="{{ url_for('static', filename='imagebloggerlog.png') }}"
-            class="logo"
-        >
-
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
         <h1>Shop Management</h1>
-
     </header>
 
     <!-- ================= NAVBAR ================= -->
-
     <nav>
-
-        <!-- LEFT NAV LINKS -->
-
         <div class="nav-left">
-
-            <a href="{{ url_for('Home') }}">
-                Home
-            </a>
-
-            <a href="#">
-                About
-            </a>
-
-            <a href="#">
-                Contact
-            </a>
+            <a href="{{ url_for('Home') }}">Home</a>
             {% if user and user.role == "admin" %}
-    <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
-              {% endif %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            {% endif %}
             {% if user and user.role == "shopowner" %}
-    <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
-              {% endif %}
-            {% if user %}
-    <a href="{{ url_for('user_dashboard') }}">My Dashboard</a>
-              {% endif %}
-
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
         </div>
-
-        <!-- RIGHT PROFILE SECTION -->
 
         <div class="profile-dropdown">
-
-            <!-- PROFILE IMAGE -->
-
-            {% if user %}
-
-                <img
-                    src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
-                    class="profile-icon"
-                    id="profileToggle"
-                >
-
-            {% else %}
-
-                <img
-                    src="{{ url_for('static', filename='default.png') }}"
-                    class="profile-icon"
-                    id="profileToggle"
-                >
-
-            {% endif %}
-
-            <!-- DROPDOWN MENU -->
-
+            <img src="{% if user %}{{ url_for('static', filename='profile_pics/' + user.profile_image) }}{% else %}{{ url_for('static', filename='default.png') }}{% endif %}" class="profile-icon" id="profileToggle">
             <div class="dropdown-menu" id="dropdownMenu">
-
-                <!-- USER INFO -->
-
                 <div class="user-info">
-
                     {% if user %}
-
-                        <!-- BIG PROFILE IMAGE -->
-
-                        <img
-                            src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
-                            class="big-profile"
-                        >
-
-                        <!-- USERNAME -->
-
-                        <h2>
-                            Hi, {{ user.username }}!
-                        </h2>
-
-                        <p>
-                            Shopowner Mode 🏪
-                        </p>
-
-                    {% else %}
-
-                        <img
-                            src="{{ url_for('static', filename='default.png') }}"
-                            class="big-profile"
-                        >
-
-                        <h2>
-                            Welcome Guest
-                        </h2>
-
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>Hi, {{ user.username }}!</h2>
+                        <p>Shopowner Mode 🏪</p>
                     {% endif %}
-
                 </div>
-
-                <!-- MENU LINKS -->
-
                 <div class="menu-links">
-
-                    {% if user %}
-
-                        <a href="{{ url_for('profile') }}">
-                            Profile
-                        </a>
-
-                        <a href="{{ url_for('shopowner_dashboard') }}">
-                            Shop Dashboard
-                        </a>
-
-                        <a href="#">
-                            Settings
-                        </a>
-
-                        <a href="#">
-                            Help
-                        </a>
-
-                        <a href="{{ url_for('Logout') }}">
-                            Logout
-                        </a>
-
-                    {% else %}
-
-                        <a href="{{ url_for('Login') }}">
-                            Login
-                        </a>
-
-                        <a href="{{ url_for('Register') }}">
-                            Register
-                        </a>
-
-                    {% endif %}
-
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('Logout') }}">Logout</a>
                 </div>
-
             </div>
-
         </div>
-
     </nav>
 
     <!-- ================= PAGE CONTENT ================= -->
-
     <div class="dashboard-content">
-        <h2 style="color: #333; margin-bottom: 20px;">🏪 Shopowner Dashboard</h2>
-        
-        <!-- FLASH MESSAGES -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div style="background: #e3f2fd; color: #1976d2; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        <div class="dashboard-header">
+            <h2>Dashboard Overview</h2>
+        </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>My Products</h3>
-                <p>{{ inventory|length }}</p>
+                <div class="stat-icon">🛒</div>
+                <div class="stat-details">
+                    <h3>Total Products</h3>
+                    <p>{{ inventory|length }}</p>
+                </div>
             </div>
             <div class="stat-card">
-                <h3>Total Sales</h3>
-                <p>$0.00</p>
+                <div class="stat-icon">💰</div>
+                <div class="stat-details">
+                    <h3>Total Sales</h3>
+                    <p>${{ "%.2f"|format(total_sales) }}</p>
+                </div>
             </div>
             <div class="stat-card">
-                <h3>Total Customers</h3>
-                <p>{{ customers|length }}</p>
+                <div class="stat-icon">👥</div>
+                <div class="stat-details">
+                    <h3>Total Customers</h3>
+                    <p>{{ customers|length }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-details">
+                    <h3>Low Stock</h3>
+                    <p style="color: var(--danger);">{{ low_stock_count }}</p>
+                </div>
             </div>
         </div>
 
-        <div class="add-customer-form">
-            <h3 style="color: #333; margin-bottom: 15px;">Add New Customer</h3>
-            <form action="{{ url_for('add_customer') }}" method="POST" style="max-width: 500px;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-group">
-                    <label>Customer Name</label>
-                    <input type="text" name="customer_name" required placeholder="Enter name">
+        <!-- INVENTORY SECTION -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Inventory Management</h3>
+                <div style="display: flex; gap: 15px;">
+                    <input type="text" id="inventorySearch" class="table-search" placeholder="Search inventory..." onkeyup="filterInventory()">
+                    <button class="btn btn-primary" onclick="openModal('addProductModal')">+ Add Product</button>
                 </div>
-                <div class="form-group">
-                    <label>Email ID (Optional)</label>
-                    <input type="email" name="email" placeholder="Enter email">
-                </div>
-                <button type="submit" class="btn">Create Account</button>
-            </form>
-        </div>
-
-        <div class="add-customer-form" style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
-            <h3 style="color: #333; margin-bottom: 15px;">Inventory Quick Add</h3>
-            <form action="{{ url_for('add_inventory_item') }}" method="POST" style="max-width: 500px; display: flex; gap: 10px; align-items: flex-end;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-group" style="flex: 2;">
-                    <label>Item Name</label>
-                    <input type="text" name="item_name" required>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Price</label>
-                    <input type="number" step="0.01" name="item_price" required>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Qty</label>
-                    <input type="number" name="item_count" required>
-                </div>
-                <button type="submit" class="btn" style="margin-bottom: 15px;">Add</button>
-            </form>
-        </div>
-
-        <!-- INVENTORY TABLE -->
-        <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
-            <h3 style="color: #333; margin-bottom: 15px;">Current Inventory</h3>
-            <table style="width: 100%; border-collapse: collapse;">
+            </div>
+            
+            <table id="inventoryTable">
                 <thead>
-                    <tr style="background: #fcfcfc;">
-                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Item Name</th>
-                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Price</th>
-                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Stock Count</th>
-                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Added Date</th>
-                        <th style="padding: 15px; text-align: left; border-bottom: 1px solid #eee;">Actions</th>
+                    <tr>
+                        <th style="text-align:center;">Image</th>
+                        <th>Item Name</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Added Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in inventory %}
                     <tr>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">{{ item.item_name }}</td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">${{ "%.2f"|format(item.item_price) }}</td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; color: {% if item.item_count > 0 %}#4caf50{% else %}#f44336{% endif %};">{{ item.item_count }}</td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">{{ item.created_date.strftime('%Y-%m-%d') }}</td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">
-                            <form action="{{ url_for('delete_inventory_item', id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this item? Customer purchase history will remain intact.');">
+                        <td style="font-size: 1.5rem; text-align:center;">📦</td>
+                        <td style="font-weight: 600;">{{ item.item_name }}</td>
+                        <td>₹{{ "%.2f"|format(item.item_price) }}</td>
+                        <td>{{ item.item_count }}</td>
+                        <td>{{ item.created_date.strftime('%d %b %Y') }}</td>
+                        <td>
+                            {% if item.item_count <= 0 %}
+                                <span class="badge badge-danger">Out of Stock</span>
+                            {% elif item.item_count <= 5 %}
+                                <span class="badge badge-warning">Low Stock</span>
+                            {% else %}
+                                <span class="badge badge-success">In Stock</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{{ url_for('delete_inventory_item', id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this item? Customer purchases remain intact.');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" style="background: #ff5252; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Delete</button>
+                                <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;">Delete</button>
                             </form>
                         </td>
                     </tr>
                     {% endfor %}
                     {% if not inventory %}
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 30px; color: #999;">Inventory is empty. Add items above.</td>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <h3>No Products Added</h3>
+                                <p>Start by adding inventory to your shop.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -281,82 +171,110 @@
         </div>
     </div>
 
+    <!-- ================= MODALS ================= -->
+    
+    <!-- Add Customer Modal -->
+    <div id="addCustomerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Customer</h3>
+                <button type="button" class="close-modal" onclick="closeModal('addCustomerModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('add_customer') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label>Customer Name *</label>
+                    <input type="text" name="customer_name" required placeholder="e.g., Rahul Kumar">
+                </div>
+                <div class="form-group">
+                    <label>Gmail ID *</label>
+                    <input type="email" name="email" required placeholder="rahul@gmail.com">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addCustomerModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Product</h3>
+                <button type="button" class="close-modal" onclick="closeModal('addProductModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('add_inventory_item') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label>Item Name *</label>
+                    <input type="text" name="item_name" required placeholder="e.g., Sugar">
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Price ($) *</label>
+                        <input type="number" step="0.01" name="item_price" required placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Quantity *</label>
+                        <input type="number" name="item_count" required placeholder="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="reset" class="btn btn-outline">Reset</button>
+                    <button type="submit" class="btn btn-primary">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= TOASTS ================= -->
+    <div class="toast-container" id="toastContainer">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="toast">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
     <!-- ================= JAVASCRIPT ================= -->
-
+    <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='dropdown.js') }}"></script>
     <script>
-        function filterCustomers() {
-            const input = document.getElementById('customerSearch');
-            const filter = input.value.toLowerCase();
-            const list = document.getElementById('customerList');
-            const items = list.getElementsByClassName('customer-item');
+        // Modal Logic
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        });
 
-            for (let i = 0; i < items.length; i++) {
-                const name = items[i].textContent || items[i].innerText;
-                if (name.toLowerCase().indexOf(filter) > -1) {
-                    items[i].style.display = "";
-                } else {
-                    items[i].style.display = "none";
+        // Auto-hide Toasts
+        setTimeout(() => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach(t => t.style.display = 'none');
+        }, 5000);
+
+        // Inventory Table Search
+        function filterInventory() {
+            const filter = document.getElementById('inventorySearch').value.toLowerCase();
+            const trs = document.getElementById('inventoryTable').getElementsByTagName('tr');
+            
+            for (let i = 1; i < trs.length; i++) {
+                const td = trs[i].getElementsByTagName('td')[1]; // Search by Item Name
+                if (td) {
+                    const txt = td.textContent || td.innerText;
+                    trs[i].style.display = txt.toLowerCase().includes(filter) ? "" : "none";
                 }
             }
         }
     </script>
-
-    <script>
-
-        const profileToggle =
-            document.getElementById(
-                "profileToggle"
-            );
-
-        const dropdownMenu =
-            document.getElementById(
-                "dropdownMenu"
-            );
-
-        // TOGGLE DROPDOWN
-
-        profileToggle.addEventListener(
-            "click",
-            () => {
-
-                dropdownMenu.classList.toggle(
-                    "show"
-                );
-
-            }
-        );
-
-        // CLOSE WHEN CLICK OUTSIDE
-
-        window.addEventListener(
-            "click",
-            function(e){
-
-                if(
-
-                    !profileToggle.contains(
-                        e.target
-                    )
-
-                    &&
-
-                    !dropdownMenu.contains(
-                        e.target
-                    )
-
-                ){
-
-                    dropdownMenu.classList.remove(
-                        "show"
-                    );
-
-                }
-
-            }
-        );
-
-    </script>
-
 </body>
-
 </html>

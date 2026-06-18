@@ -146,6 +146,8 @@ class CustomerPurchase(db.Model):
     price = db.Column(db.Float, nullable=False)
     purchase_date = db.Column(db.DateTime, default=datetime.utcnow)
 
+    product = db.relationship('Inventory')
+
 
 with app.app_context():
     db.create_all()
@@ -428,10 +430,22 @@ def shopowner_dashboard():
         db.select(Inventory).filter_by(shop_id=user.id)
     ).scalars().all()
 
+    # Calculate Total Sales
+    total_sales = db.session.execute(
+        db.select(db.func.sum(CustomerPurchase.price * CustomerPurchase.quantity))
+        .join(Customer, CustomerPurchase.customer_id == Customer.id)
+        .filter(Customer.shop_id == user.id)
+    ).scalar() or 0.0
+
+    # Calculate Low Stock (threshold <= 5)
+    low_stock_count = sum(1 for item in inventory if item.item_count <= 5)
+
     return render_template("shopowner_dashboard.html", 
                            user=user, 
                            customers=customers,
-                           inventory=inventory)
+                           inventory=inventory,
+                           total_sales=total_sales,
+                           low_stock_count=low_stock_count)
 
 
 @app.route("/shopowner/customer/add", methods=["POST"])
@@ -475,15 +489,14 @@ def customer_account(id):
         db.select(Inventory).filter_by(shop_id=user.id)
     ).scalars().all()
 
-    # Get purchases
+    # Get purchases using new relationship
     purchases = db.session.execute(
-        db.select(CustomerPurchase, Inventory)
-        .join(Inventory, CustomerPurchase.product_id == Inventory.id)
-        .filter(CustomerPurchase.customer_id == id)
+        db.select(CustomerPurchase)
+        .filter_by(customer_id=id)
         .order_by(CustomerPurchase.purchase_date.desc())
-    ).all()
+    ).scalars().all()
 
-    total_spent = sum(p.CustomerPurchase.price * p.CustomerPurchase.quantity for p in purchases)
+    total_spent = sum(p.price * p.quantity for p in purchases)
 
     return render_template("customer_account.html", 
                            user=user, 
@@ -724,19 +737,6 @@ def reset_password():
         return redirect(url_for("Login"))
 
     return render_template("reset_password.html")
-
-# ================= USER DASHBOARD =================
-@app.route("/dashboard")
-def user_dashboard():
-    if 'user' not in session:
-        return redirect(url_for("Login"))
-
-    user = db.session.get(User, session['user'])
-    
-    # If they are a shopowner or admin, they might prefer their specific dashboards,
-    # but we'll provide this general one for activity/history.
-    
-    return render_template("user_dashboard.html", user=user)
 
 # ================= UPGRADE TO SHOPOWNER =================
 @app.route("/upgrade_to_shopowner", methods=["POST"])

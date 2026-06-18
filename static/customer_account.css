@@ -1,93 +1,59 @@
 /* Inherit most from dashboard */
 @import url('shopowner_dashboard.css');
 
-.customer-header {
-    background: #f8f9fa;
+.customer-header-card {
+    background: white;
     padding: 30px;
-    border-radius: 12px;
+    border-radius: 16px;
     margin-bottom: 30px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .customer-info h1 {
-    margin: 0;
-    color: #333;
-    font-size: 2rem;
+    margin: 0 0 10px 0;
+    color: var(--text-dark);
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.customer-info h1 span.icon {
+    background: var(--bg-light);
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 1.8rem;
 }
 
 .customer-info p {
-    margin: 5px 0 0 0;
-    color: #666;
+    margin: 5px 0;
+    color: var(--text-gray);
     font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.total-summary {
+.customer-stats {
+    display: flex;
+    gap: 30px;
     text-align: right;
 }
 
-.total-summary h2 {
+.stat-block h2 {
     margin: 0;
-    color: #00bcd4;
-    font-size: 2.5rem;
+    color: var(--primary);
+    font-size: 2.2rem;
 }
 
-.total-summary span {
-    color: #999;
+.stat-block span {
+    color: var(--text-gray);
     font-size: 0.9rem;
     text-transform: uppercase;
-}
-
-/* Table Styles */
-.purchase-table-container {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    margin-top: 30px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-th, td {
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-th {
-    color: #333;
-    font-weight: bold;
-    background: #fcfcfc;
-}
-
-tr:hover {
-    background: #fcfcfc;
-}
-
-.delete-btn {
-    background: #ff5252;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.delete-btn:hover {
-    background: #d32f2f;
-}
-
-.add-purchase-form {
-    background: #e3f2fd;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }

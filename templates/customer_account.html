@@ -1,23 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <title>{{ customer.customer_name }} - Account</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='Home.css') }}"
-    >
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='customer_account.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='customer_account.css') }}">
 </head>
-
 <body>
 
     <!-- ================= SIDEBAR ================= -->
@@ -26,8 +14,8 @@
         <div class="sidebar-header">
             <h2>Customers</h2>
         </div>
-        <div class="search-container">
-            <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="filterCustomers()">
+        <div class="sidebar-search">
+            <input type="text" id="customerSearch" placeholder="🔍 Search customers...">
         </div>
         <div class="customer-list" id="customerList">
             {% for c in customers %}
@@ -39,34 +27,24 @@
     </div>
 
     <!-- ================= HEADER ================= -->
-
     <header>
-
-        <img
-            src="{{ url_for('static', filename='imagebloggerlog.png') }}"
-            class="logo"
-        >
-
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
         <h1>Customer Account</h1>
-
     </header>
 
     <!-- ================= NAVBAR ================= -->
-
     <nav>
-
         <div class="nav-left">
             <a href="{{ url_for('Home') }}">Home</a>
-            <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
-            <a href="{{ url_for('user_dashboard') }}">My Dashboard</a>
-        </div>
-
-        <div class="profile-dropdown">
-            {% if user %}
-                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="profile-icon" id="profileToggle">
-            {% else %}
-                <img src="{{ url_for('static', filename='default.png') }}" class="profile-icon" id="profileToggle">
+            {% if user and user.role == "admin" %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
             {% endif %}
+            {% if user and user.role == "shopowner" %}
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+        </div>
+        <div class="profile-dropdown">
+            <img src="{% if user %}{{ url_for('static', filename='profile_pics/' + user.profile_image) }}{% else %}{{ url_for('static', filename='default.png') }}{% endif %}" class="profile-icon" id="profileToggle">
             <div class="dropdown-menu" id="dropdownMenu">
                 <div class="user-info">
                     {% if user %}
@@ -80,139 +58,174 @@
                 </div>
             </div>
         </div>
-
     </nav>
 
     <!-- ================= PAGE CONTENT ================= -->
-
     <div class="dashboard-content">
         
-        <div class="customer-header">
+        <!-- Customer Profile Card -->
+        <div class="customer-header-card">
             <div class="customer-info">
-                <h1>{{ customer.customer_name }}</h1>
-                <p>{{ customer.email if customer.email else "No email provided" }}</p>
-                <span style="font-size: 0.8rem; color: #999;">Customer since {{ customer.created_at.strftime('%B %d, %Y') }}</span>
+                <h1><span class="icon">👤</span> {{ customer.customer_name }}</h1>
+                <p>📧 {{ customer.email if customer.email else "No email provided" }}</p>
+                <p>📅 Customer since {{ customer.created_at.strftime('%d %b %Y') }}</p>
             </div>
-            <div class="total-summary">
-                <span>Total Spent</span>
-                <h2>${{ "%.2f"|format(total_spent) }}</h2>
+            <div class="customer-stats">
+                <div class="stat-block">
+                    <span>Total Purchases</span>
+                    <h2>{{ purchases|length }}</h2>
+                </div>
+                <div class="stat-block">
+                    <span>Total Spend</span>
+                    <h2>₹{{ "%.2f"|format(total_spent) }}</h2>
+                </div>
             </div>
         </div>
 
-        <!-- FLASH MESSAGES -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div style="background: #e3f2fd; color: #1976d2; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="add-purchase-form">
-            <h3 style="color: #333; margin-bottom: 15px;">Record New Purchase</h3>
-            <form action="{{ url_for('add_purchase', customer_id=customer.id) }}" method="POST" style="display: flex; gap: 15px; align-items: flex-end;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <div class="form-group" style="flex: 2;">
-                    <label>Select Product</label>
-                    <select name="product_id" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                        <option value="">-- Choose from Inventory --</option>
-                        {% for item in inventory %}
-                            <option value="{{ item.id }}" {% if item.item_count <= 0 %}disabled{% endif %}>
-                                {{ item.item_name }} (${{ "%.2f"|format(item.item_price) }}) - {{ item.item_count }} in stock
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group" style="flex: 1;">
-                    <label>Quantity</label>
-                    <input type="number" name="quantity" value="1" min="1" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                </div>
-
-                <button type="submit" class="btn" style="margin-bottom: 0;">Add Item</button>
-            </form>
-        </div>
-
-        <div class="purchase-table-container">
-            <h3 style="color: #333; margin-bottom: 15px;">Purchase History</h3>
+        <!-- Purchase Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Purchased Items</h3>
+                <button class="btn btn-primary" onclick="openModal('addPurchaseModal')">+ Assign Product</button>
+            </div>
             <table>
                 <thead>
                     <tr>
                         <th>Product</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Date</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
                         <th>Total</th>
-                        <th>Action</th>
+                        <th>Purchase Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in purchases %}
                         <tr>
-                            <td>{{ p.Inventory.item_name }}</td>
-                            <td>${{ "%.2f"|format(p.CustomerPurchase.price) }}</td>
-                            <td>{{ p.CustomerPurchase.quantity }}</td>
-                            <td>{{ p.CustomerPurchase.purchase_date.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td style="font-weight: bold; color: #00bcd4;">
-                                ${{ "%.2f"|format(p.CustomerPurchase.price * p.CustomerPurchase.quantity) }}
+                            <td style="font-weight: 600;">{{ p.product.item_name }}</td>
+                            <td>{{ p.quantity }}</td>
+                            <td>₹{{ "%.2f"|format(p.price) }}</td>
+                            <td style="font-weight: bold; color: var(--primary);">
+                                ₹{{ "%.2f"|format(p.price * p.quantity) }}
                             </td>
+                            <td>{{ p.purchase_date.strftime('%d %b %Y, %H:%M') }}</td>
                             <td>
-                                <form action="{{ url_for('delete_purchase', id=p.CustomerPurchase.id) }}" method="POST" onsubmit="return confirm('Delete this record?');">
+                                <form action="{{ url_for('delete_purchase', id=p.id) }}" method="POST" onsubmit="return confirm('Remove this purchase? Inventory stock will be automatically restored.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="delete-btn">Delete</button>
+                                    <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;">Remove</button>
                                 </form>
                             </td>
                         </tr>
                     {% endfor %}
                     {% if not purchases %}
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 30px; color: #999;">No purchases recorded yet.</td>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <h3>No Purchases Yet</h3>
+                                    <p>Click "+ Assign Product" to add a purchase to this customer's account.</p>
+                                </div>
+                            </td>
                         </tr>
                     {% endif %}
                 </tbody>
             </table>
         </div>
+    </div>
 
+    <!-- ================= MODALS ================= -->
+    <div id="addPurchaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Assign Product</h3>
+                <button class="close-modal" onclick="closeModal('addPurchaseModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('add_purchase', customer_id=customer.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label>Customer</label>
+                    <input type="text" value="{{ customer.customer_name }}" disabled style="background: #f1f5f9; color: #64748b; font-weight: 600;">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Product *</label>
+                    <select name="product_id" id="productSelect" required onchange="updatePurchaseTotals()">
+                        <option value="" data-price="0">-- Select from Inventory --</option>
+                        {% for item in inventory %}
+                            <option value="{{ item.id }}" data-price="{{ item.item_price }}" {% if item.item_count <= 0 %}disabled{% endif %}>
+                                {{ item.item_name }} - Stock: {{ item.item_count }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Quantity *</label>
+                        <input type="number" name="quantity" id="purchaseQty" value="1" min="1" required oninput="updatePurchaseTotals()">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Unit Price</label>
+                        <input type="text" id="unitPriceDisplay" value="₹0.00" disabled style="background: #f1f5f9; color: #64748b;">
+                    </div>
+                </div>
+
+                <div style="text-align: right; margin: 15px 0; font-size: 1.2rem;">
+                    <strong>Total: <span id="purchaseTotalDisplay" style="color: var(--primary);">₹0.00</span></strong>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addPurchaseModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Purchase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= TOASTS ================= -->
+    <div class="toast-container" id="toastContainer">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="toast">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
 
     <!-- ================= JAVASCRIPT ================= -->
-
+    <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='dropdown.js') }}"></script>
     <script>
-        function filterCustomers() {
-            const input = document.getElementById('customerSearch');
-            const filter = input.value.toLowerCase();
-            const list = document.getElementById('customerList');
-            const items = list.getElementsByClassName('customer-item');
-
-            for (let i = 0; i < items.length; i++) {
-                const name = items[i].textContent || items[i].innerText;
-                if (name.toLowerCase().indexOf(filter) > -1) {
-                    items[i].style.display = "";
-                } else {
-                    items[i].style.display = "none";
-                }
+        // Modal Logic
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
             }
+        });
+
+        // Auto-hide Toasts
+        setTimeout(() => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach(t => t.style.display = 'none');
+        }, 5000);
+
+        // Purchase Modal Auto-Calculation
+        function updatePurchaseTotals() {
+            const select = document.getElementById('productSelect');
+            const qtyInput = document.getElementById('purchaseQty');
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+            const qty = parseInt(qtyInput.value) || 0;
+            
+            document.getElementById('unitPriceDisplay').value = '₹' + price.toFixed(2);
+            document.getElementById('purchaseTotalDisplay').innerText = '₹' + (price * qty).toFixed(2);
         }
     </script>
-
-    <script>
-        const profileToggle = document.getElementById("profileToggle");
-        const dropdownMenu = document.getElementById("dropdownMenu");
-
-        profileToggle.addEventListener("click", () => {
-            dropdownMenu.classList.toggle("show");
-        });
-
-        window.addEventListener("click", function(e){
-            if(!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)){
-                dropdownMenu.classList.remove("show");
-            }
-        });
-    </script>
-
 </body>
-
 </html>

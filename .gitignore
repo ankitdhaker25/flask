@@ -1,6 +1,26 @@
+# Environment variables
 .env
+
+# Python
 __pycache__/
 *.pyc
-instance/*.db
-users.db
-backups/*.db
+
+# Databases and Backups
+instance/
+backups/
+*.sql
+*.db
+
+# User Uploads (Privacy)
+static/profile_pics/*
+!static/profile_pics/.gitkeep
+
+# Temporary/Personal Files
+How-to-earn-mony-from-mony.html
+How-to-earn-mony-from-youtube.html
+text.txt
+*.deb
+
+# OS specific
+.DS_Store
+Thumbs.db

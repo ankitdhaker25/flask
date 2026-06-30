@@ -13,6 +13,17 @@
 
 <h2>Login</h2>
 
+<!-- FLASH MESSAGES -->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flash-message" style="color: #ef4444; background-color: #fef2f2; border: 1px solid #fee2e2; padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; font-weight: bold;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <form method="POST" id="form">
 
 <input

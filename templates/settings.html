@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Warehouse Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+</head>
+<body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
+
+    <!-- ================= HEADER ================= -->
+    <header>
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
+        <h1>WAREHOUSE MANAGEMENT</h1>
+    </header>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav>
+        <div class="nav-left">
+            <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="#">Contact</a>
+            {% if user and user.role == "admin" %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            {% endif %}
+            {% if user and user.role == "shopowner" %}
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT PROFILE SECTION -->
+        <div class="profile-dropdown">
+            {% if user %}
+                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="profile-icon" id="profileToggle">
+            {% else %}
+                <img src="{{ url_for('static', filename='default.png') }}" class="profile-icon" id="profileToggle">
+            {% endif %}
+
+            <!-- DROPDOWN MENU -->
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="user-info">
+                    {% if user %}
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>Hi, {{ user.username }}!</h2>
+                        <p>Welcome back 👋</p>
+                    {% else %}
+                        <img src="{{ url_for('static', filename='default.png') }}" class="big-profile">
+                        <h2>Welcome Guest</h2>
+                    {% endif %}
+                </div>
+
+                <div class="menu-links">
+                    {% if user %}
+                        <a href="{{ url_for('profile') }}">Profile</a>
+                        <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+                        <a href="{{ url_for('settings') }}">Settings</a>
+                        <a href="#">Help</a>
+                        <a href="{{ url_for('Logout') }}">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('Login') }}">Login</a>
+                        <a href="{{ url_for('Register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================= SETTINGS CONTAINER ================= -->
+    <div class="profile-container" style="text-align: left; max-width: 450px;">
+        <h2 style="font-family: 'Outfit', sans-serif; margin-top: 0; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Account Settings</h2>
+        
+        <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee;">
+            <div>
+                <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Dark Mode</strong>
+                <span style="font-size: 13px; color: #777;">Switch between light and dark themes</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+        <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+            <div>
+                <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Email Notifications</strong>
+                <span style="font-size: 13px; color: #777;">Receive email updates about your account</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" checked disabled style="opacity: 0.5;">
+                <span class="slider round" style="opacity: 0.5; cursor: not-allowed; background-color: #00bcd4;"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        const profileToggle = document.getElementById("profileToggle");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+
+        // TOGGLE DROPDOWN
+        profileToggle.addEventListener("click", () => {
+            dropdownMenu.classList.toggle("show");
+        });
+
+        // CLOSE WHEN CLICK OUTSIDE
+        window.addEventListener("click", function(e) {
+            if (!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove("show");
+            }
+        });
+
+        // DARK MODE TOGGLE
+        const darkModeToggle = document.getElementById("darkModeToggle");
+
+        if (localStorage.getItem("theme") === "dark") {
+            darkModeToggle.checked = true;
+        }
+
+        darkModeToggle.addEventListener("change", function() {
+            if (this.checked) {
+                document.body.classList.add("dark-mode");
+                localStorage.setItem("theme", "dark");
+            } else {
+                document.body.classList.remove("dark-mode");
+                localStorage.setItem("theme", "light");
+            }
+        });
+    </script>
+</body>
+</html>

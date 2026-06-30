@@ -9,6 +9,11 @@
 </head>
 
 <body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
 
 <div class="profile-container">
 
@@ -98,6 +103,8 @@
     </div>
     {% endif %}
 
+
+
 </div>
 
 <!-- ================= JS ================= -->
@@ -163,6 +170,8 @@ removeBtn.addEventListener("click", () => {
 });
 
 </script>
+
+
 
 </body>
 </html>

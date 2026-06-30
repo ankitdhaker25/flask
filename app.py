@@ -129,13 +129,20 @@ class Inventory(db.Model):
     item_count = db.Column(db.Integer, nullable=False)
     created_date = db.Column(db.DateTime, default=datetime.utcnow)
 
+    shop = db.relationship('User', foreign_keys=[shop_id], backref=db.backref('inventory_items', lazy=True))
+
 
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     shop_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     customer_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100))
+    phone = db.Column(db.String(20), default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('linked_customers', lazy=True))
+    shop = db.relationship('User', foreign_keys=[shop_id], backref=db.backref('shop_customers', lazy=True))
 
 
 class CustomerPurchase(db.Model):
@@ -147,22 +154,63 @@ class CustomerPurchase(db.Model):
     purchase_date = db.Column(db.DateTime, default=datetime.utcnow)
 
     product = db.relationship('Inventory')
+    customer = db.relationship('Customer', backref=db.backref('purchases', cascade='all, delete-orphan', lazy=True))
+
+
+def check_and_update_schema():
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if db_uri.startswith('sqlite:///'):
+        db_path = db_uri.replace('sqlite:///', '')
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            try:
+                cursor = conn.cursor()
+                # Verify that customer table exists before migrating columns
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customer'")
+                if cursor.fetchone():
+                    cursor.execute("PRAGMA table_info(customer)")
+                    cols = [row[1] for row in cursor.fetchall()]
+                    
+                    # Check for phone column
+                    if 'phone' not in cols:
+                        cursor.execute("ALTER TABLE customer ADD COLUMN phone TEXT DEFAULT ''")
+                        app.logger.info("Migrated schema: added phone column to customer table")
+                        
+                    # Check for user_id column
+                    if 'user_id' not in cols:
+                        cursor.execute("ALTER TABLE customer ADD COLUMN user_id INTEGER REFERENCES user(id)")
+                        app.logger.info("Migrated schema: added user_id column to customer table")
+                    
+                    conn.commit()
+            except Exception as e:
+                app.logger.error(f"Migration error: {e}")
+            finally:
+                conn.close()
 
 
 with app.app_context():
+    check_and_update_schema()
     db.create_all()
 
 # ================= HELPERS =================
+_last_backup_date = None
+
 def backup_database():
+    global _last_backup_date
+    today = datetime.now().strftime('%Y-%m-%d')
+    if _last_backup_date == today:
+        return
+
     if not os.path.exists(DATABASE_PATH):
         return
 
     os.makedirs(BACKUP_FOLDER, exist_ok=True)
 
-    backup_name = f"users-{datetime.now().strftime('%Y-%m-%d')}.db"
+    backup_name = f"users-{today}.db"
     backup_path = os.path.join(BACKUP_FOLDER, backup_name)
 
     if os.path.exists(backup_path):
+        _last_backup_date = today
         return
 
     source = sqlite3.connect(DATABASE_PATH)
@@ -173,6 +221,8 @@ def backup_database():
     finally:
         target.close()
         source.close()
+        
+    _last_backup_date = today
 
 
 with app.app_context():
@@ -200,6 +250,35 @@ def valid_image_file(file):
 
 def valid_email(email):
     return bool(email and re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email))
+
+def link_customer_to_user(user):
+    """
+    Attempts to auto-link the User to an existing Customer record.
+    Returns:
+      True if a link was successfully made.
+      False if no match found, or if multiple matches exist (requiring manual resolution).
+    """
+    email_matches = []
+    phone_matches = []
+    
+    if user.email:
+        email_matches = db.session.execute(
+            db.select(Customer).filter(Customer.email == user.email, Customer.user_id == None)
+        ).scalars().all()
+        
+    if user.phone:
+        phone_matches = db.session.execute(
+            db.select(Customer).filter(Customer.phone == user.phone, Customer.user_id == None)
+        ).scalars().all()
+        
+    # Combine matches without duplicates
+    matches = list({m.id: m for m in (email_matches + phone_matches)}.values())
+    
+    if len(matches) == 1:
+        matches[0].user_id = user.id
+        db.session.commit()
+        return True
+    return False
 
 def strong_password(password):
     return bool(
@@ -266,7 +345,92 @@ def Home():
     user = None
     if 'user' in session:
         user = db.session.get(User, session['user'])
-    return render_template("Home.html", user=user)
+    
+    if not user:
+        return render_template("Home.html", user=None)
+        
+    if user.role == "admin":
+        total_users = db.session.execute(db.select(db.func.count(User.id))).scalar() or 0
+        total_shopowners = db.session.execute(db.select(db.func.count(User.id)).filter_by(role='shopowner')).scalar() or 0
+        total_regular_users = db.session.execute(db.select(db.func.count(User.id)).filter_by(role='user')).scalar() or 0
+        recent_users = db.session.execute(
+            db.select(User).order_by(User.id.desc()).limit(5)
+        ).scalars().all()
+        
+        return render_template(
+            "Home.html", 
+            user=user, 
+            total_users=total_users,
+            total_shopowners=total_shopowners,
+            total_regular_users=total_regular_users,
+            recent_users=recent_users
+        )
+        
+    elif user.role == "shopowner":
+        customers_count = db.session.execute(
+            db.select(db.func.count(Customer.id)).filter_by(shop_id=user.id)
+        ).scalar() or 0
+        
+        inventory_items = db.session.execute(
+            db.select(Inventory).filter_by(shop_id=user.id)
+        ).scalars().all()
+        
+        total_products = len(inventory_items)
+        low_stock_items = [item for item in inventory_items if item.item_count <= 5]
+        
+        total_sales = db.session.execute(
+            db.select(db.func.sum(CustomerPurchase.price * CustomerPurchase.quantity))
+            .join(Customer, CustomerPurchase.customer_id == Customer.id)
+            .filter(Customer.shop_id == user.id)
+        ).scalar() or 0.0
+        
+        recent_purchases = db.session.execute(
+            db.select(CustomerPurchase)
+            .join(Customer, CustomerPurchase.customer_id == Customer.id)
+            .filter(Customer.shop_id == user.id)
+            .order_by(CustomerPurchase.purchase_date.desc())
+            .limit(5)
+        ).scalars().all()
+        
+        return render_template(
+            "Home.html",
+            user=user,
+            customers_count=customers_count,
+            total_products=total_products,
+            low_stock_count=len(low_stock_items),
+            low_stock_items=low_stock_items[:5],
+            total_sales=total_sales,
+            recent_purchases=recent_purchases
+        )
+        
+    else:  # role == "user"
+        linked_customers = db.session.execute(
+            db.select(Customer).filter_by(user_id=user.id)
+        ).scalars().all()
+        
+        purchases = []
+        for customer in linked_customers:
+            purchases.extend(customer.purchases)
+            
+        purchases.sort(key=lambda x: x.purchase_date, reverse=True)
+        total_spent = sum(p.price * p.quantity for p in purchases)
+        
+        return render_template(
+            "Home.html",
+            user=user,
+            total_purchases=len(purchases),
+            total_spent=total_spent,
+            recent_purchases=purchases[:5]
+        )
+
+# ================= ABOUT =================
+@app.route("/about")
+def about():
+    user = None
+    if 'user' in session:
+        user = db.session.get(User, session['user'])
+    return render_template("About.html", user=user)
+
 
 # ================= REGISTER =================
 @app.route("/Register", methods=["GET", "POST"])
@@ -303,6 +467,8 @@ def Register():
 
         db.session.add(user)
         db.session.commit()
+
+        link_customer_to_user(user)
 
         flash(f"Registered as {role} 🎉")
         return redirect(url_for("Login"))
@@ -346,6 +512,15 @@ def profile():
     user = db.session.get(User, session['user'])
     return render_template("profile.html", user=user)
 
+# ================= SETTINGS =================
+@app.route("/settings")
+def settings():
+    if 'user' not in session:
+        return redirect(url_for("Login"))
+
+    user = db.session.get(User, session['user'])
+    return render_template("settings.html", user=user)
+
 # ================= UPDATE PROFILE =================
 @app.route("/update_user", methods=["POST"])
 @limiter.limit("10 per minute")
@@ -380,6 +555,10 @@ def update_user():
             return redirect(url_for("profile"))
 
     db.session.commit()
+    
+    # Check and link customer records if possible
+    link_customer_to_user(user)
+
     flash("Updated 🎉")
     return redirect(url_for("profile"))
 
@@ -454,6 +633,7 @@ def add_customer():
     user_id = session['user']
     name = (request.form.get("customer_name") or "").strip()
     email = (request.form.get("email") or "").strip().lower()
+    phone = (request.form.get("phone") or "").strip()
 
     if not name:
         flash("Customer name is required")
@@ -462,10 +642,26 @@ def add_customer():
     customer = Customer(
         shop_id=user_id,
         customer_name=name,
-        email=email
+        email=email,
+        phone=phone
     )
     db.session.add(customer)
     db.session.commit()
+    
+    # Try to auto-link this customer to an existing registered user
+    matched_user = None
+    if email:
+        matched_user = db.session.execute(
+            db.select(User).filter_by(email=email)
+        ).scalar_one_or_none()
+    
+    if not matched_user and phone:
+        matched_user = db.session.execute(
+            db.select(User).filter_by(phone=phone)
+        ).scalar_one_or_none()
+        
+    if matched_user:
+        link_customer_to_user(matched_user)
     
     flash(f"Customer {name} added! 🎉")
     return redirect(url_for("shopowner_dashboard"))
@@ -559,6 +755,11 @@ def delete_purchase(id):
     if not customer or customer.shop_id != user_id:
         abort(403)
 
+    # Restore inventory stock
+    product = db.session.get(Inventory, purchase.product_id)
+    if product:
+        product.item_count += purchase.quantity
+
     db.session.delete(purchase)
     db.session.commit()
     
@@ -634,7 +835,7 @@ def send_otp():
     reset_otp = PasswordResetOTP(
         email=email,
         otp_hash=generate_password_hash(str(otp)),
-        expires_at=datetime.now() + timedelta(minutes=5)
+        expires_at=datetime.utcnow() + timedelta(minutes=5)
     )
 
     db.session.add(reset_otp)
@@ -684,7 +885,7 @@ def verify_otp():
         flash("Invalid OTP ❌")
         return redirect(url_for("forgot_password"))
 
-    if datetime.now() >= reset_otp.expires_at:
+    if datetime.utcnow() >= reset_otp.expires_at:
         db.session.delete(reset_otp)
         db.session.commit()
         flash("OTP expired. Please request a new OTP.")
@@ -752,10 +953,154 @@ def upgrade_to_shopowner():
     
     return redirect(url_for("profile"))
 
+# ================= MY PURCHASES =================
+@app.route("/my-purchases", methods=["GET", "POST"])
+def my_purchases():
+    if 'user' not in session:
+        return redirect(url_for("Login"))
+
+    user = db.session.get(User, session['user'])
+    if not user:
+        return redirect(url_for("Login"))
+
+    # Handle manual linking request
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "link_by_id":
+            customer_id_val = (request.form.get("customer_id") or "").strip()
+            if not customer_id_val:
+                flash("Customer ID is required for linking ❌")
+                return redirect(url_for("my_purchases"))
+
+            try:
+                customer_id = int(customer_id_val)
+            except ValueError:
+                flash("Invalid Customer ID format ❌")
+                return redirect(url_for("my_purchases"))
+
+            customer = db.session.get(Customer, customer_id)
+            if not customer:
+                flash("Customer record not found ❌")
+                return redirect(url_for("my_purchases"))
+
+            if customer.user_id is not None:
+                if customer.user_id == user.id:
+                    flash("You are already linked to this customer record.")
+                else:
+                    flash("This customer record is already linked to another user account ❌")
+                return redirect(url_for("my_purchases"))
+
+            # Enforce authorization check: must match email, phone or have matching details
+            if (customer.email and customer.email == user.email) or (customer.phone and customer.phone == user.phone):
+                customer.user_id = user.id
+                db.session.commit()
+                flash("Customer account linked successfully! 🎉")
+            else:
+                flash("Verification failed: Customer details (email/phone) do not match your account ❌")
+            return redirect(url_for("my_purchases"))
+
+        elif action == "link_match":
+            customer_id_val = request.form.get("customer_id")
+            if not customer_id_val:
+                flash("Customer ID is required ❌")
+                return redirect(url_for("my_purchases"))
+
+            customer = db.session.get(Customer, int(customer_id_val))
+            if not customer or customer.user_id is not None:
+                flash("Invalid customer record or already linked ❌")
+                return redirect(url_for("my_purchases"))
+
+            # Double check email/phone matches user's email/phone to prevent hijacking
+            if (customer.email and customer.email == user.email) or (customer.phone and customer.phone == user.phone):
+                customer.user_id = user.id
+                db.session.commit()
+                flash("Account linked successfully! 🎉")
+            else:
+                flash("Verification failed ❌")
+            return redirect(url_for("my_purchases"))
+
+    # Fetch linked customers
+    linked_customers = db.session.execute(
+        db.select(Customer).filter_by(user_id=user.id)
+    ).scalars().all()
+
+    # Enforce database query filtering by the authenticated user's linked customer IDs
+    linked_customer_ids = [c.id for c in linked_customers]
+
+    purchases = []
+    if linked_customer_ids:
+        purchases = db.session.execute(
+            db.select(CustomerPurchase)
+            .filter(CustomerPurchase.customer_id.in_(linked_customer_ids))
+            .order_by(CustomerPurchase.purchase_date.desc())
+        ).scalars().all()
+
+    # Manual resolution checking:
+    # If the user is NOT linked to any customer yet (or if they want to link others), find unlinked matching profiles
+    unlinked_matches = []
+    email_matches = []
+    phone_matches = []
+    if user.email:
+        email_matches = db.session.execute(
+            db.select(Customer).filter(Customer.email == user.email, Customer.user_id == None)
+        ).scalars().all()
+    if user.phone:
+        phone_matches = db.session.execute(
+            db.select(Customer).filter(Customer.phone == user.phone, Customer.user_id == None)
+        ).scalars().all()
+
+    unlinked_matches = list({m.id: m for m in (email_matches + phone_matches)}.values())
+
+    return render_template("my_purchases.html",
+                           user=user,
+                           purchases=purchases,
+                           linked_customers=linked_customers,
+                           unlinked_matches=unlinked_matches)
+
+
+@app.route("/my-purchases/<int:customer_id>")
+def customer_purchases_api(customer_id):
+    if 'user' not in session:
+        abort(403) # Return 403 or 401 when unauthorized
+
+    user = db.session.get(User, session['user'])
+    if not user:
+        abort(403)
+
+    customer = db.session.get(Customer, customer_id)
+    if not customer:
+        abort(404)
+
+    # Authorization check
+    if customer.user_id != user.id:
+        abort(403) # Return 403 Unauthorized when access rules fail
+
+    purchases = db.session.execute(
+        db.select(CustomerPurchase)
+        .filter_by(customer_id=customer_id)
+        .order_by(CustomerPurchase.purchase_date.desc())
+    ).scalars().all()
+
+    return {
+        "customer_id": customer.id,
+        "customer_name": customer.customer_name,
+        "purchases": [
+            {
+                "id": p.id,
+                "product_name": p.product.item_name if p.product else "Deleted Product",
+                "quantity": p.quantity,
+                "price": p.price,
+                "total": p.price * p.quantity,
+                "date": p.purchase_date.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            for p in purchases
+        ]
+    }
+
 # ================= RUN =================
 if __name__ == "__main__":
     app.run(
         debug=not IS_PRODUCTION,
         host=os.environ.get("HOST", "127.0.0.1"),
-        port=int(os.environ.get("PORT", "50000"))
+        port=int(os.environ.get("PORT", "50001"))
     )

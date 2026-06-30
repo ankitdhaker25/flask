@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='customer_account.css') }}">
 </head>
 <body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
 
     <!-- ================= SIDEBAR ================= -->
     <div class="sidebar-trigger"></div>
@@ -36,11 +41,15 @@
     <nav>
         <div class="nav-left">
             <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
             {% if user and user.role == "admin" %}
                 <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
             {% endif %}
             {% if user and user.role == "shopowner" %}
                 <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
             {% endif %}
         </div>
         <div class="profile-dropdown">
@@ -54,6 +63,7 @@
                 </div>
                 <div class="menu-links">
                     <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('settings') }}">Settings</a>
                     <a href="{{ url_for('Logout') }}">Logout</a>
                 </div>
             </div>
@@ -68,6 +78,14 @@
             <div class="customer-info">
                 <h1><span class="icon">👤</span> {{ customer.customer_name }}</h1>
                 <p>📧 {{ customer.email if customer.email else "No email provided" }}</p>
+                {% if customer.phone %}
+                    <p>📞 {{ customer.phone }}</p>
+                {% endif %}
+                {% if customer.user_id %}
+                    <p style="color: var(--primary); font-weight: bold;">🔗 Linked to User ID: {{ customer.user_id }} ({{ customer.user.username }})</p>
+                {% else %}
+                    <p style="color: #64748b; font-style: italic;">⚠️ Unlinked Customer Account</p>
+                {% endif %}
                 <p>📅 Customer since {{ customer.created_at.strftime('%d %b %Y') }}</p>
             </div>
             <div class="customer-stats">
@@ -102,7 +120,7 @@
                 <tbody>
                     {% for p in purchases %}
                         <tr>
-                            <td style="font-weight: 600;">{{ p.product.item_name }}</td>
+                            <td style="font-weight: 600;">{{ p.product.item_name if p.product else "Deleted Product" }}</td>
                             <td>{{ p.quantity }}</td>
                             <td>₹{{ "%.2f"|format(p.price) }}</td>
                             <td style="font-weight: bold; color: var(--primary);">

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Purchases</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='shopowner_dashboard.css') }}">
+    <style>
+        .my-purchases-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        .linking-card {
+            border-left: 5px solid #00bcd4;
+            background: #f0fdfa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        .linking-card h3 {
+            margin-top: 0;
+            color: #0f766e;
+        }
+        .resolution-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .resolution-form input {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            flex: 1;
+            max-width: 300px;
+        }
+        .badge-linked {
+            background-color: #dcfce7;
+            color: #15803d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .matching-list {
+            margin-top: 15px;
+            display: grid;
+            gap: 10px;
+        }
+        .matching-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            background: #334155;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .My-Purchase-History{
+    text-align: center;
+    padding: 12px 24px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+
+    animation: fadeSlideDown 1s ease-out;
+}
+
+@keyframes fadeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+</style>
+</head>
+<body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
+
+    <!-- ================= HEADER ================= -->
+    <header>
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
+        <h1>WHEREHOUSE MANAGMENT</h1>
+    </header>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav>
+        <div class="nav-left">
+            <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            {% if user and user.role == "admin" %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            {% endif %}
+            {% if user and user.role == "shopowner" %}
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+            {% endif %}
+        </div>
+
+        <div class="profile-dropdown">
+            <img src="{% if user %}{{ url_for('static', filename='profile_pics/' + user.profile_image) }}{% else %}{{ url_for('static', filename='default.png') }}{% endif %}" class="profile-icon" id="profileToggle">
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="user-info">
+                    {% if user %}
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>Hi, {{ user.username }}!</h2>
+                    {% endif %}
+                </div>
+                <div class="menu-links">
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('settings') }}">Settings</a>
+                    <a href="{{ url_for('Logout') }}">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================= CONTENT ================= -->
+     <div class="My-Purchase-History">
+        <h2 >My Purchase History</h2>
+     </div>
+    <div class="my-purchases-container">
+        
+        <!-- Linking Status / Manual Resolution -->
+        {% if not linked_customers %}
+            <div class="linking-card" style="border-left-color: var(--danger, #ef4444); background: #fef2f2;">
+                <h3 style="color: #991b1b;">⚠️ Account Unlinked</h3>
+                <p>Your online user account is not connected to any retail customer profiles yet. Because of this, we cannot display your purchase history.</p>
+                
+                {% if unlinked_matches %}
+                    <div style="margin-top: 20px;">
+                        <strong style="color: #991b1b;">Matches Found:</strong> We found customer profiles matching your email or phone number. Click below to link:
+                        <div class="matching-list">
+                            {% for c in unlinked_matches %}
+                                <div class="matching-item">
+                                    <div>
+                                        <strong>{{ c.customer_name }}</strong> (Shop: {{ c.shop.username if c.shop else "Unknown" }})<br>
+                                        <small style="color: #64748b;">ID: {{ c.id }} | Email: {{ c.email }} | Phone: {{ c.phone if c.phone else "N/A" }}</small>
+                                    </div>
+                                    <form action="{{ url_for('my_purchases') }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="link_match">
+                                        <input type="hidden" name="customer_id" value="{{ c.id }}">
+                                        <button type="submit" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;">Link Account</button>
+                                    </form>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div style="margin-top: 20px;">
+                        <strong>Link Manually:</strong> If you have a Customer ID from your receipt or shopkeeper, enter it below to link your account:
+                        <form action="{{ url_for('my_purchases') }}" method="POST" class="resolution-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="link_by_id">
+                            <input type="text" name="customer_id" placeholder="Enter Customer ID (e.g. 5)" required>
+                            <button type="submit" class="btn btn-primary">Link Account</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="linking-card">
+                <h3>🔗 Linked Customer Profiles</h3>
+                <p>Your user account is successfully linked to the following store profile(s):</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for c in linked_customers %}
+                        <span class="badge-linked">
+                            👤 {{ c.customer_name }} (Shop: {{ c.shop.username if c.shop else "Unknown" }})
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Purchases Table -->
+        <div class="table-container" style="box-shadow: none; padding: 0;">
+            <h3>Your Purchase History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Shop</th>
+                        <th>Product Name</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                        <tr>
+                            <td>{{ p.purchase_date.strftime('%d %b %Y, %H:%M') }}</td>
+                            <td>{{ p.product.shop.username if (p.product and p.product.shop) else "Unknown Shop" }}</td>
+                            <td style="font-weight: 600;">{{ p.product.item_name if p.product else "Deleted Product" }}</td>
+                            <td>₹{{ "%.2f"|format(p.price) }}</td>
+                            <td>{{ p.quantity }}</td>
+                            <td style="font-weight: bold; color: var(--primary);">₹{{ "%.2f"|format(p.price * p.quantity) }}</td>
+                        </tr>
+                    {% endfor %}
+                    {% if not purchases %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <h3>No Purchases Found</h3>
+                                    {% if linked_customers %}
+                                        <p>You haven't bought anything from the shops yet.</p>
+                                    {% else %}
+                                        <p>Please link your customer profile to see your historical purchases.</p>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ================= TOASTS ================= -->
+    <div class="toast-container" id="toastContainer">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="toast">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // Profile toggle logic
+        const profileToggle = document.getElementById("profileToggle");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+
+        profileToggle.addEventListener("click", () => {
+            dropdownMenu.classList.toggle("show");
+        });
+
+        window.addEventListener("click", function(e) {
+            if (!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove("show");
+            }
+        });
+
+        // Toast auto hide
+        setTimeout(() => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach(t => t.style.display = 'none');
+        }, 5000);
+    </script>
+</body>
+</html>

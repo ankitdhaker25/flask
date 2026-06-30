@@ -2,238 +2,401 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <title>Home</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='Home.css') }}"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Management - Smart Inventory Solutions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
 
     <!-- ================= HEADER ================= -->
-
     <header>
-
-        <img
-            src="{{ url_for('static', filename='imagebloggerlog.png') }}"
-            class="logo"
-        >
-
-        <h1>My Flask Website</h1>
-
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
+        <h1>WAREHOUSE MANAGEMENT</h1>
     </header>
 
     <!-- ================= NAVBAR ================= -->
-
     <nav>
-
-        <!-- LEFT NAV LINKS -->
-
         <div class="nav-left">
-
-            <a href="{{ url_for('Home') }}">
-                Home
-            </a>
-
-            <a href="#">
-                About
-            </a>
-
-            <a href="#">
-                Contact
-            </a>
+            <a href="{{ url_for('Home') }}" class="active">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="#">Contact</a>
             {% if user and user.role == "admin" %}
-    <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
-              {% endif %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            {% endif %}
             {% if user and user.role == "shopowner" %}
-    <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
-              {% endif %}
-
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+            {% endif %}
         </div>
 
         <!-- RIGHT PROFILE SECTION -->
-
         <div class="profile-dropdown">
-
-            <!-- PROFILE IMAGE -->
-
             {% if user %}
-
-                <img
-                    src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
-                    class="profile-icon"
-                    id="profileToggle"
-                >
-
+                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="profile-icon" id="profileToggle">
             {% else %}
-
-                <img
-                    src="{{ url_for('static', filename='default.png') }}"
-                    class="profile-icon"
-                    id="profileToggle"
-                >
-
+                <img src="{{ url_for('static', filename='default.png') }}" class="profile-icon" id="profileToggle">
             {% endif %}
 
             <!-- DROPDOWN MENU -->
-
             <div class="dropdown-menu" id="dropdownMenu">
-
-                <!-- USER INFO -->
-
                 <div class="user-info">
-
                     {% if user %}
-
-                        <!-- BIG PROFILE IMAGE -->
-
-                        <img
-                            src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}"
-                            class="big-profile"
-                        >
-
-                        <!-- USERNAME -->
-
-                        <h2>
-                            Hi, {{ user.username }}!
-                        </h2>
-
-                        <p>
-                            Welcome back 👋
-                        </p>
-
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>Hi, {{ user.username }}!</h2>
+                        <p>Welcome back 👋</p>
                     {% else %}
-
-                        <img
-                            src="{{ url_for('static', filename='default.png') }}"
-                            class="big-profile"
-                        >
-
-                        <h2>
-                            Welcome Guest
-                        </h2>
-
+                        <img src="{{ url_for('static', filename='default.png') }}" class="big-profile">
+                        <h2>Welcome Guest</h2>
                     {% endif %}
-
                 </div>
-
-                <!-- MENU LINKS -->
 
                 <div class="menu-links">
-
                     {% if user %}
-
-                        <a href="{{ url_for('profile') }}">
-                            Profile
-                        </a>
-
-                        <a href="#">
-                            Settings
-                        </a>
-
-                        <a href="#">
-                            Help
-                        </a>
-
-                        <a href="{{ url_for('Logout') }}">
-                            Logout
-                        </a>
-
+                        <a href="{{ url_for('profile') }}">Profile</a>
+                        <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+                        <a href="{{ url_for('settings') }}">Settings</a>
+                        <a href="#">Help</a>
+                        <a href="{{ url_for('Logout') }}">Logout</a>
                     {% else %}
-
-                        <a href="{{ url_for('Login') }}">
-                            Login
-                        </a>
-
-                        <a href="{{ url_for('Register') }}">
-                            Register
-                        </a>
-
+                        <a href="{{ url_for('Login') }}">Login</a>
+                        <a href="{{ url_for('Register') }}">Register</a>
                     {% endif %}
-
                 </div>
-
             </div>
-
         </div>
-
     </nav>
 
+    <!-- ================= FLASH MESSAGES ================= -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <!-- ================= PAGE CONTENT ================= -->
+    <main class="main-content">
+        
+        {% if not user %}
+            <!-- ================= GUEST VIEW ================= -->
+            <section class="hero-section">
+                <div class="hero-content">
+                    <span class="badge">V2.0 Warehouse System</span>
+                    <h2>Streamline Your Inventory Management</h2>
+                    <p>Track stocks, manage customer purchases, handle multiple shop locations, and get real-time business insights. All in one secure, modern platform.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('Register') }}" class="btn btn-primary">Get Started</a>
+                        <a href="{{ url_for('Login') }}" class="btn btn-secondary">Sign In</a>
+                    </div>
+                </div>
+                <div class="hero-graphic">
+                    <svg viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="20" width="460" height="360" rx="24" fill="url(#heroGrad)" />
+                        <rect x="60" y="80" width="100" height="100" rx="16" fill="white" fill-opacity="0.12" />
+                        <rect x="200" y="80" width="100" height="100" rx="16" fill="white" fill-opacity="0.12" />
+                        <rect x="340" y="80" width="100" height="100" rx="16" fill="white" fill-opacity="0.12" />
+                        <rect x="60" y="220" width="380" height="100" rx="16" fill="white" fill-opacity="0.08" />
+                        <circle cx="110" cy="130" r="20" fill="#00bcd4" />
+                        <circle cx="250" cy="130" r="20" fill="#ff9800" />
+                        <circle cx="390" cy="130" r="20" fill="#4caf50" />
+                        <defs>
+                            <linearGradient id="heroGrad" x1="20" y1="20" x2="480" y2="380" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#2c3e50" />
+                                <stop offset="1" stop-color="#0f2027" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+            </section>
 
-    <h2 class="welcome">
+            <section class="features-section">
+                <div class="section-header">
+                    <h2>Everything you need to manage your inventory</h2>
+                    <p>Designed to scale with your business from a single shop to multiple warehouses.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="icon-box info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                        </div>
+                        <h3>Real-time Stock Control</h3>
+                        <p>Instantly update item counts, monitor low-stock warnings, and organize products into custom categories.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box success">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        </div>
+                        <h3>Interactive Dashboards</h3>
+                        <p>Shopowners and Admins get tailored dashboards displaying key business performance metrics and charts.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box warning">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </div>
+                        <h3>Secure Customer Portals</h3>
+                        <p>Customers can link their profiles to shop purchase histories using secure verification to view receipts.</p>
+                    </div>
+                </div>
+            </section>
 
-        Welcome Home 🎉
+        {% else %}
+            <!-- ================= LOGGED IN VIEWS ================= -->
+            
+            {% if user.role == "admin" %}
+                <!-- ================= ADMIN DASHBOARD ================= -->
+                <div class="dashboard-wrapper">
+                    <div class="dashboard-header animate-fade-in">
+                        <div>
+                            <h2>Admin Workspace 🛠️</h2>
+                            <p>Overview of system-wide users and database status.</p>
+                        </div>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Go to Admin Panel</a>
+                    </div>
 
-    </h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-title">Total Users</span>
+                            <span class="stat-value">{{ total_users }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Shop Owners</span>
+                            <span class="stat-value text-primary">{{ total_shopowners }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Regular Customers</span>
+                            <span class="stat-value text-success">{{ total_regular_users }}</span>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card recent-users">
+                        <h3>Recently Registered Users</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for r_user in recent_users %}
+                                        <tr>
+                                            <td>#{{ r_user.id }}</td>
+                                            <td>
+                                                <div class="user-cell">
+                                                    <img src="{{ url_for('static', filename='profile_pics/' + r_user.profile_image) }}" class="table-avatar">
+                                                    <span>{{ r_user.username }}</span>
+                                                </div>
+                                            </td>
+                                            <td>{{ r_user.email }}</td>
+                                            <td><span class="badge-role {{ r_user.role }}">{{ r_user.role }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            {% elif user.role == "shopowner" %}
+                <!-- ================= SHOPOWNER DASHBOARD ================= -->
+                <div class="dashboard-wrapper">
+                    <div class="dashboard-header animate-fade-in">
+                        <div>
+                            <h2>Shop Dashboard 🏪</h2>
+                            <p>Real-time analytics for your shop location.</p>
+                        </div>
+                        <div class="header-actions">
+                            <a href="{{ url_for('shopowner_dashboard') }}" class="btn btn-primary">Manage Inventory</a>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-title">Total Sales Revenue</span>
+                            <span class="stat-value text-success">${{ "%.2f"|format(total_sales) }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Registered Customers</span>
+                            <span class="stat-value text-primary">{{ customers_count }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Total Products</span>
+                            <span class="stat-value">{{ total_products }}</span>
+                        </div>
+                        <div class="stat-card {% if low_stock_count > 0 %}alert-card{% endif %}">
+                            <span class="stat-title">Low Stock Alerts</span>
+                            <span class="stat-value {% if low_stock_count > 0 %}text-danger{% endif %}">{{ low_stock_count }}</span>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-split">
+                        <div class="dashboard-card">
+                            <h3>Recent Sales Transactions</h3>
+                            {% if recent_purchases %}
+                                <div class="table-responsive">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Product</th>
+                                                <th>Qty</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for purchase in recent_purchases %}
+                                                <tr>
+                                                    <td>{{ purchase.customer.customer_name }}</td>
+                                                    <td>{{ purchase.product.item_name }}</td>
+                                                    <td>{{ purchase.quantity }}</td>
+                                                    <td>${{ "%.2f"|format(purchase.price * purchase.quantity) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <p>No transactions logged yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>Low Stock Inventory</h3>
+                            {% if low_stock_items %}
+                                <div class="table-responsive">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Price</th>
+                                                <th>Stock</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in low_stock_items %}
+                                                <tr class="low-stock-row">
+                                                    <td>{{ item.item_name }}</td>
+                                                    <td>${{ "%.2f"|format(item.item_price) }}</td>
+                                                    <td><span class="stock-badge danger">{{ item.item_count }} left</span></td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="empty-state success">
+                                    <p>🎉 All products are well stocked!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- ================= CUSTOMER DASHBOARD ================= -->
+                <div class="dashboard-wrapper">
+                    <div class="dashboard-header animate-fade-in">
+                        <div>
+                            <h2>Welcome, {{ user.username }}! 🛍️</h2>
+                            <p>Here is your purchase history overview.</p>
+                        </div>
+                        <a href="{{ url_for('my_purchases') }}" class="btn btn-primary">Link Customer ID</a>
+                    </div>
+
+                    <div class="stats-grid customer-stats">
+                        <div class="stat-card">
+                            <span class="stat-title">Total Purchases</span>
+                            <span class="stat-value">{{ total_purchases }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Total Amount Spent</span>
+                            <span class="stat-value text-success">${{ "%.2f"|format(total_spent) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Recent Purchase History</h3>
+                        {% if recent_purchases %}
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Product</th>
+                                            <th>Store</th>
+                                            <th>Price</th>
+                                            <th>Qty</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for purchase in recent_purchases %}
+                                            <tr>
+                                                <td>{{ purchase.purchase_date.strftime('%Y-%m-%d') }}</td>
+                                                <td>{{ purchase.product.item_name }}</td>
+                                                <td>{{ purchase.customer.shop.username }}</td>
+                                                <td>${{ "%.2f"|format(purchase.price) }}</td>
+                                                <td>{{ purchase.quantity }}</td>
+                                                <td>${{ "%.2f"|format(purchase.price * purchase.quantity) }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No purchases found linked to your account.</p>
+                                <a href="{{ url_for('my_purchases') }}" class="btn btn-secondary btn-sm">Link Your Purchase Record</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+        {% endif %}
+
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer>
+        <p>&copy; 2026 Warehouse Management System. All rights reserved.</p>
+    </footer>
 
     <!-- ================= JAVASCRIPT ================= -->
-
     <script>
-
-        const profileToggle =
-            document.getElementById(
-                "profileToggle"
-            );
-
-        const dropdownMenu =
-            document.getElementById(
-                "dropdownMenu"
-            );
+        const profileToggle = document.getElementById("profileToggle");
+        const dropdownMenu = document.getElementById("dropdownMenu");
 
         // TOGGLE DROPDOWN
-
-        profileToggle.addEventListener(
-            "click",
-            () => {
-
-                dropdownMenu.classList.toggle(
-                    "show"
-                );
-
-            }
-        );
+        profileToggle.addEventListener("click", () => {
+            dropdownMenu.classList.toggle("show");
+        });
 
         // CLOSE WHEN CLICK OUTSIDE
-
-        window.addEventListener(
-            "click",
-            function(e){
-
-                if(
-
-                    !profileToggle.contains(
-                        e.target
-                    )
-
-                    &&
-
-                    !dropdownMenu.contains(
-                        e.target
-                    )
-
-                ){
-
-                    dropdownMenu.classList.remove(
-                        "show"
-                    );
-
-                }
-
+        window.addEventListener("click", function(e) {
+            if (!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove("show");
             }
-        );
-
-    </script>
-
-</body>
-
-</html>    
+        });
     </script>
 
 </body>

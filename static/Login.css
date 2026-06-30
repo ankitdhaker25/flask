@@ -30,9 +30,10 @@ body{
     0 10px 40px rgba(0,0,0,.2);
 
     text-align:center;
+}
     
 /* footer */
-    footer{
+.auth-container footer{
 
     margin-top:20px;
 
@@ -42,7 +43,6 @@ body{
 
     font-size:14px;
 
-}
 }
 
 .auth-container h2{

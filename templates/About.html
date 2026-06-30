@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Warehouse Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='about.css') }}">
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
+
+    <!-- ================= HEADER ================= -->
+    <header>
+        <img src="{{ url_for('static', filename='imagebloggerlog.png') }}" class="logo">
+        <h1>WAREHOUSE MANAGEMENT</h1>
+    </header>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav>
+        <div class="nav-left">
+            <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('about') }}" class="active">About</a>
+            <a href="#">Contact</a>
+            {% if user and user.role == "admin" %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
+            {% endif %}
+            {% if user and user.role == "shopowner" %}
+                <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT PROFILE SECTION -->
+        <div class="profile-dropdown">
+            {% if user %}
+                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="profile-icon" id="profileToggle">
+            {% else %}
+                <img src="{{ url_for('static', filename='default.png') }}" class="profile-icon" id="profileToggle">
+            {% endif %}
+
+            <!-- DROPDOWN MENU -->
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="user-info">
+                    {% if user %}
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="big-profile">
+                        <h2>Hi, {{ user.username }}!</h2>
+                        <p>Welcome back 👋</p>
+                    {% else %}
+                        <img src="{{ url_for('static', filename='default.png') }}" class="big-profile">
+                        <h2>Welcome Guest</h2>
+                    {% endif %}
+                </div>
+
+                <div class="menu-links">
+                    {% if user %}
+                        <a href="{{ url_for('profile') }}">Profile</a>
+                        <a href="{{ url_for('my_purchases') }}">My Purchases</a>
+                        <a href="{{ url_for('settings') }}">Settings</a>
+                        <a href="#">Help</a>
+                        <a href="{{ url_for('Logout') }}">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('Login') }}">Login</a>
+                        <a href="{{ url_for('Register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================= PAGE CONTENT ================= -->
+    <main class="about-container">
+        <!-- Hero Section -->
+        <section class="about-hero">
+            <div class="hero-content animate-fade-in">
+                <span class="hero-tagline">Smart Inventory Solutions</span>
+                <h2>Next-Gen Warehouse Control</h2>
+                <p>Welcome to our state-of-the-art Warehouse Management System. We empower business owners, store managers, and administrators with real-time tracking, seamless stock operations, and comprehensive auditing to keep supply chains running at peak efficiency.</p>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="about-stats">
+            <div class="stat-card">
+                <h3>99.9%</h3>
+                <p>Accuracy Rate</p>
+            </div>
+            <div class="stat-card">
+                <h3>24/7</h3>
+                <p>Real-time Tracking</p>
+            </div>
+            <div class="stat-card">
+                <h3>10x</h3>
+                <p>Faster Operations</p>
+            </div>
+            <div class="stat-card">
+                <h3>Secured</h3>
+                <p>Multi-factor Protection</p>
+            </div>
+        </section>
+
+        <!-- Features Grid -->
+        <section class="about-features">
+            <div class="section-title">
+                <h2>System Capabilities</h2>
+                <p>Explore the powerful tools designed to simplify your day-to-day logistics.</p>
+            </div>
+
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </div>
+                    <h3>Inventory Management</h3>
+                    <p>Track stocks, manage product categories, control levels, and receive low-stock alerts automatically.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </div>
+                    <h3>Customer &amp; Shopowner Portals</h3>
+                    <p>Distinct portals tailored for admins, shop owners, and customers. Each user gets an optimized view of relevant details.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <h3>Purchase History</h3>
+                    <p>Keep an immutable, searchable record of all transactions. Customers can view their history and shop owners can audit sales.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h3>Advanced Security</h3>
+                    <p>Protected by CSRF tokens, rate limiting, secure password hashing, and optional OTP-based verification for critical actions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mission / Vision -->
+        <section class="about-mission">
+            <div class="mission-image">
+                <!-- A nice clean SVG illustration representing logistics/storage -->
+                <svg viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="50" y="50" width="400" height="300" rx="16" fill="url(#paint0_linear)" />
+                    <circle cx="250" cy="200" r="80" fill="white" fill-opacity="0.1" />
+                    <path d="M210 170H290V230H210V170Z" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M250 140V170" stroke="white" stroke-width="4" stroke-linecap="round" />
+                    <path d="M250 230V260" stroke="white" stroke-width="4" stroke-linecap="round" />
+                    <path d="M180 200H210" stroke="white" stroke-width="4" stroke-linecap="round" />
+                    <path d="M290 200H320" stroke="white" stroke-width="4" stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="paint0_linear" x1="50" y1="50" x2="450" y2="350" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#00bcd4" />
+                            <stop offset="1" stop-color="#b41414" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <div class="mission-text">
+                <h2>Our Mission</h2>
+                <p>We believe that inventory management shouldn't be a bottleneck for growing businesses. Our goal is to replace manual spreadsheets and complex databases with an intuitive, fast, and secure web application.</p>
+                <p>By bringing automation to warehousing, we enable businesses to scale effortlessly, reduce overhead costs, and build trust with their customers through error-free operations.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="about-footer">
+        <p>&copy; 2026 Warehouse Management System. All rights reserved.</p>
+    </footer>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        const profileToggle = document.getElementById("profileToggle");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+
+        // TOGGLE DROPDOWN
+        profileToggle.addEventListener("click", () => {
+            dropdownMenu.classList.toggle("show");
+        });
+
+        // CLOSE WHEN CLICK OUTSIDE
+        window.addEventListener("click", function(e){
+            if(!profileToggle.contains(e.target) && !dropdownMenu.contains(e.target)){
+                dropdownMenu.classList.remove("show");
+            }
+        });
+    </script>
+</body>
+</html>

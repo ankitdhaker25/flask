@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='shopowner_dashboard.css') }}">
 </head>
 <body>
+<script>
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+</script>
 
     <!-- ================= SIDEBAR ================= -->
     <div class="sidebar-trigger"></div>
@@ -46,11 +51,15 @@
     <nav>
         <div class="nav-left">
             <a href="{{ url_for('Home') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
             {% if user and user.role == "admin" %}
                 <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
             {% endif %}
             {% if user and user.role == "shopowner" %}
                 <a href="{{ url_for('shopowner_dashboard') }}">Shop Dashboard</a>
+            {% endif %}
+            {% if user %}
+                <a href="{{ url_for('my_purchases') }}">My Purchases</a>
             {% endif %}
         </div>
 
@@ -66,6 +75,7 @@
                 </div>
                 <div class="menu-links">
                     <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('settings') }}">Settings</a>
                     <a href="{{ url_for('Logout') }}">Logout</a>
                 </div>
             </div>
@@ -90,7 +100,7 @@
                 <div class="stat-icon">💰</div>
                 <div class="stat-details">
                     <h3>Total Sales</h3>
-                    <p>${{ "%.2f"|format(total_sales) }}</p>
+                    <p>₹{{ "%.2f"|format(total_sales) }}</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -190,6 +200,10 @@
                     <label>Gmail ID *</label>
                     <input type="email" name="email" required placeholder="rahul@gmail.com">
                 </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" placeholder="e.g., 9876543210">
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('addCustomerModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Customer</button>
@@ -213,7 +227,7 @@
                 </div>
                 <div style="display: flex; gap: 15px;">
                     <div class="form-group" style="flex: 1;">
-                        <label>Price ($) *</label>
+                        <label>Price (₹) *</label>
                         <input type="number" step="0.01" name="item_price" required placeholder="0.00">
                     </div>
                     <div class="form-group" style="flex: 1;">
